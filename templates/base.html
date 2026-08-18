@@ -549,7 +549,16 @@
             .content {
                 margin-right: 280px !important;
                 width: calc(100% - 280px) !important;
-               /* ─── Mobile & Tablet Screens (< 992px) ─── */
+                padding: 28px !important;
+                min-width: 0;
+            }
+
+            .sidebar-toggle-btn, .sidebar-overlay {
+                display: none !important;
+            }
+        }
+
+        /* ─── Mobile & Tablet Screens (< 992px) ─── */
         @media (max-width: 991.98px) {
             html, body {
                 width: 100% !important;
