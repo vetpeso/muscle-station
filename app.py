@@ -3208,6 +3208,27 @@ def import_data():
     '''
 
 
+@app.route('/_diag')
+def _diag():
+    info = {
+        'USE_POSTGRES': USE_POSTGRES,
+        'DATABASE_URL_set': bool(DATABASE_URL),
+    }
+    try:
+        db = get_db()
+        info['db_type'] = 'postgres' if USE_POSTGRES else 'sqlite'
+        r = db.execute("SELECT COUNT(*) FROM patients").fetchone()
+        info['patients'] = r[0]
+        r = db.execute("SELECT COUNT(*) FROM visits").fetchone()
+        info['visits'] = r[0]
+        r = db.execute("SELECT COUNT(*) FROM users").fetchone()
+        info['users'] = r[0]
+    except Exception as e:
+        info['error'] = str(e)
+    import json
+    return json.dumps(info, ensure_ascii=False)
+
+
 # ─── تشغيل التطبيق ───
 
 if __name__ == '__main__':
