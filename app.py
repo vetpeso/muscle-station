@@ -1201,7 +1201,7 @@ def reception():
             f"""SELECT p.*, COALESCE(lv.last_visit, '') AS last_visit_str
                 FROM patients p
                 LEFT JOIN (
-                    SELECT patient_id, MAX(visit_date || 'T' || id) AS last_visit
+                    SELECT patient_id, MAX(visit_date || 'T' || CAST(id AS TEXT)) AS last_visit
                     FROM visits GROUP BY patient_id
                 ) lv ON lv.patient_id = p.id
                 {where}
