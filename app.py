@@ -3114,6 +3114,100 @@ def audit_log():
     return render_template('audit_log.html', logs=logs, page=page, pages=pages, total=total)
 
 
+# ─── استيراد البيانات ───
+
+@app.route('/import_data', methods=['GET', 'POST'])
+@admin_required
+def import_data():
+    if not USE_POSTGRES:
+        flash('هذه الأداة متاحة فقط عند استخدام قاعدة بيانات سحابية', 'warning')
+        return redirect(url_for('settings'))
+
+    if request.method == 'POST':
+        file = request.files.get('db_file')
+        if not file or not file.filename.endswith('.db'):
+            flash('يرجى رفع ملف .db صالح', 'danger')
+            return redirect(url_for('import_data'))
+
+        import tempfile
+        tmp = tempfile.NamedTemporaryFile(delete=False, suffix='.db')
+        file.save(tmp.name)
+        tmp.close()
+
+        try:
+            src = sqlite3.connect(tmp.name)
+            src.row_factory = sqlite3.Row
+            db = get_db()
+
+            TABLES = [
+                'users', 'patients', 'visits', 'packages', 'prescriptions',
+                'lab_tests', 'medical_images', 'settings', 'pain_assessments',
+                'exercise_protocols', 'exercise_prescriptions', 'pt_sessions',
+                'treatment_plans', 'rehab_protocols', 'treasury', 'audit_log'
+            ]
+
+            imported = {}
+            for table in TABLES:
+                try:
+                    rows = src.execute(f"SELECT * FROM {table}").fetchall()
+                except Exception:
+                    continue
+                if not rows:
+                    imported[table] = 0
+                    continue
+
+                cols = rows[0].keys()
+                col_names = ','.join(cols)
+                placeholders = ','.join(['%s'] * len(cols))
+
+                count = 0
+                for row in rows:
+                    values = [row[c] for c in cols]
+                    try:
+                        db.execute(f"INSERT INTO {table} ({col_names}) VALUES ({placeholders})", values)
+                        count += 1
+                    except Exception:
+                        db.rollback()
+                        continue
+                db.commit()
+                imported[table] = count
+
+            src.close()
+            os.unlink(tmp.name)
+
+            total = sum(imported.values())
+            flash(f'تم استيراد {total} سجل بنجاح!', 'success')
+            return redirect(url_for('dashboard'))
+
+        except Exception as e:
+            os.unlink(tmp.name)
+            flash(f'خطأ أثناء الاستيراد: {e}', 'danger')
+            return redirect(url_for('import_data'))
+
+    return '''
+    <!DOCTYPE html>
+    <html dir="rtl" lang="ar">
+    <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.rtl.min.css" rel="stylesheet">
+    <style>body{background:#1a1a2e;color:#fff;display:flex;justify-content:center;align-items:center;min-height:100vh;font-family:sans-serif}
+    .card{background:#16213e;border:1px solid #0f3460;border-radius:16px;padding:40px;max-width:450px;width:100%}
+    .form-control{background:#0f3460;border:1px solid #e94560;color:#fff}
+    .btn-import{background:#e94560;border:none;color:#fff;padding:12px 30px;border-radius:10px;font-size:18px;width:100%}
+    .btn-import:hover{background:#c73e54}</style></head>
+    <body>
+    <div class="card text-center">
+        <h3 style="color:#e94560">استيراد البيانات</h3>
+        <p class="text-muted mt-3">ارفع ملف database.db من الكمبيوتر</p>
+        <form method="POST" enctype="multipart/form-data" class="mt-4">
+            <input type="file" name="db_file" accept=".db" class="form-control mb-3">
+            <button type="submit" class="btn-import">استيراد</button>
+        </form>
+        <a href="/settings" class="text-muted mt-3 d-block">العودة للإعدادات</a>
+    </div>
+    </body></html>
+    '''
+
+
 # ─── تشغيل التطبيق ───
 
 if __name__ == '__main__':
