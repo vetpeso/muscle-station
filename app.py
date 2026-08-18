@@ -12,21 +12,43 @@ import shutil
 import webbrowser
 from werkzeug.security import generate_password_hash, check_password_hash
 
-DATABASE_URL = os.environ.get("DATABASE_URL")
-USE_POSTGRES = bool(DATABASE_URL)
-if USE_POSTGRES:
-    import psycopg2
-    import psycopg2.extras
-    import psycopg2.errorcodes
-
-# ─── مسارات التطبيق ───
-
 if getattr(sys, 'frozen', False):
     BASE_DIR = sys._MEIPASS
     EXE_DIR  = os.path.dirname(sys.executable)
 else:
     BASE_DIR = os.path.dirname(os.path.abspath(__file__))
     EXE_DIR  = BASE_DIR
+
+# ─── تحميل ملف .env إن وجد ───
+def _load_env():
+    for d in [EXE_DIR, BASE_DIR, os.getcwd()]:
+        env_path = os.path.join(d, '.env')
+        if os.path.isfile(env_path):
+            try:
+                with open(env_path, 'r', encoding='utf-8') as f:
+                    for line in f:
+                        line = line.strip()
+                        if line and not line.startswith('#') and '=' in line:
+                            k, v = line.split('=', 1)
+                            k = k.strip()
+                            v = v.strip().strip("'\"")
+                            if k not in os.environ:
+                                os.environ[k] = v
+            except Exception:
+                pass
+            break
+
+_load_env()
+
+DATABASE_URL = os.environ.get("DATABASE_URL")
+USE_POSTGRES = bool(DATABASE_URL)
+
+try:
+    import psycopg2
+    import psycopg2.extras
+    import psycopg2.errorcodes
+except ImportError:
+    pass
 
 DATABASE     = os.environ.get("CLINIC_DATABASE_PATH") or os.path.join(EXE_DIR, "database.db")
 TEMPLATES_DIR = os.path.join(EXE_DIR, "templates") if os.path.isdir(os.path.join(EXE_DIR, "templates")) else os.path.join(BASE_DIR, "templates")
@@ -135,8 +157,9 @@ class _PGWrapper:
 def get_db():
     db = getattr(g, '_database', None)
     if db is None:
-        if USE_POSTGRES:
-            raw = psycopg2.connect(DATABASE_URL)
+        db_url = os.environ.get("DATABASE_URL") or DATABASE_URL
+        if db_url:
+            raw = psycopg2.connect(db_url)
             raw.autocommit = False
             db = g._database = _PGWrapper(raw)
         else:
