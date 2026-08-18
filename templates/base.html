@@ -930,42 +930,46 @@
 <script src="/static/js/bootstrap.bundle.min.js"></script>
 <script src="/static/js/chart.umd.min.js"></script>
 <script>
-    // ── Mobile Layout Force Fix ──
+    // ── Mobile & Touch Layout Engine ──
     (function() {
-        function applyMobileLayout() {
-            if (window.innerWidth < 992) {
-                var sidebar = document.getElementById('mainSidebar');
-                var content = document.querySelector('.content');
-                var toggleBtn = document.getElementById('sidebarToggle');
-                if (sidebar) {
-                    sidebar.style.position = 'fixed';
-                    sidebar.style.right = '-320px';
-                    sidebar.style.left = 'auto';
-                    sidebar.style.width = '82vw';
-                    sidebar.style.maxWidth = '290px';
-                    sidebar.style.height = '100vh';
-                    sidebar.style.top = '0';
-                    sidebar.style.zIndex = '1050';
-                    sidebar.style.transition = 'right 0.3s ease';
-                    sidebar.style.boxShadow = '-5px 0 25px rgba(0,0,0,0.6)';
-                }
+        function applyResponsiveLayout() {
+            var isMobileOrTouch = (window.innerWidth < 1280) || ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+            var sidebar = document.getElementById('mainSidebar');
+            var content = document.querySelector('.content');
+            var toggleBtn = document.getElementById('sidebarToggle');
+            
+            if (isMobileOrTouch) {
                 if (content) {
-                    content.style.marginRight = '0';
-                    content.style.marginLeft = '0';
+                    content.style.marginRight = '0px';
+                    content.style.marginLeft = '0px';
                     content.style.width = '100%';
                     content.style.maxWidth = '100vw';
                     content.style.padding = '10px';
                     content.style.paddingTop = '68px';
-                    content.style.overflowX = 'hidden';
+                    content.style.overflowX = 'auto';
                 }
                 if (toggleBtn) {
                     toggleBtn.style.display = 'flex';
                 }
-                document.body.style.overflowX = 'hidden';
+                document.body.style.overflowX = 'auto';
+            } else {
+                if (sidebar) {
+                    sidebar.style.right = '0px';
+                    sidebar.classList.remove('open');
+                }
+                if (content) {
+                    content.style.marginRight = '280px';
+                    content.style.width = 'calc(100% - 280px)';
+                    content.style.padding = '28px';
+                }
+                if (toggleBtn) {
+                    toggleBtn.style.display = 'none';
+                }
             }
         }
-        applyMobileLayout();
-        window.addEventListener('resize', applyMobileLayout);
+        applyResponsiveLayout();
+        window.addEventListener('resize', applyResponsiveLayout);
+        document.addEventListener('DOMContentLoaded', applyResponsiveLayout);
     })();
 </script>
 <script>
