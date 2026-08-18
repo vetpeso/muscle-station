@@ -507,35 +507,163 @@
         }
 
         /* ══════════════════════════════════════════
-           FIXED LAYOUT — SAME ON ALL SCREENS
+           RESPONSIVE LAYOUT & MOBILE OPTIMIZATION
            ══════════════════════════════════════════ */
 
         *, *::before, *::after { box-sizing: border-box; }
 
         html, body {
-            height: 100%;
             margin: 0;
-            overflow-x: hidden;
+            padding: 0;
             width: 100%;
-        }
-
-        .sidebar-toggle-btn, .sidebar-overlay { display: none !important; }
-
-        .sidebar {
-            position: fixed !important;
-            right: 0; top: 0; bottom: 0;
-            width: 280px !important;
-            height: 100vh;
-            z-index: 1000;
-            transform: none !important;
-        }
-
-        .content {
-            margin-right: 280px !important;
-            width: calc(100% - 280px) !important;
-            padding: 28px !important;
-            min-width: 0;
             overflow-x: hidden;
+            background-color: var(--bg-dark);
+            min-height: 100vh;
+        }
+
+        /* ─── Desktop Screens (>= 992px) ─── */
+        @media (min-width: 992px) {
+            .sidebar {
+                position: fixed !important;
+                right: 0;
+                top: 0;
+                bottom: 0;
+                width: 280px !important;
+                height: 100vh;
+                z-index: 1000;
+                transform: none !important;
+            }
+
+            .content {
+                margin-right: 280px !important;
+                width: calc(100% - 280px) !important;
+                padding: 28px !important;
+                min-width: 0;
+            }
+
+            .sidebar-toggle-btn, .sidebar-overlay {
+                display: none !important;
+            }
+        }
+
+        /* ─── Mobile & Tablet Screens (< 992px) ─── */
+        @media (max-width: 991.98px) {
+            .sidebar {
+                position: fixed !important;
+                right: 0;
+                top: 0;
+                bottom: 0;
+                width: 280px !important;
+                height: 100vh;
+                z-index: 1050;
+                transform: translateX(100%) !important; /* Hide sidebar to the right */
+                transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+                box-shadow: -5px 0 25px rgba(0,0,0,0.5);
+            }
+
+            .sidebar.open {
+                transform: translateX(0) !important; /* Slide sidebar in */
+            }
+
+            .sidebar-overlay {
+                position: fixed;
+                inset: 0;
+                background: rgba(0, 0, 0, 0.7);
+                backdrop-filter: blur(4px);
+                z-index: 1040;
+                display: none;
+                opacity: 0;
+                transition: opacity 0.3s ease;
+            }
+
+            .sidebar-overlay.active {
+                display: block !important;
+                opacity: 1 !important;
+            }
+
+            .sidebar-toggle-btn {
+                display: flex !important;
+                align-items: center;
+                justify-content: center;
+                position: fixed;
+                top: 15px;
+                right: 15px;
+                z-index: 1060;
+                width: 44px;
+                height: 44px;
+                border-radius: 12px;
+                background: var(--sidebar-bg);
+                border: 1px solid var(--border-color);
+                color: var(--accent-blue);
+                font-size: 1.25rem;
+                box-shadow: 0 4px 18px rgba(0,0,0,0.4);
+                cursor: pointer;
+                transition: all 0.2s ease;
+            }
+
+            .sidebar-toggle-btn:active {
+                transform: scale(0.95);
+            }
+
+            .content {
+                margin-right: 0 !important;
+                width: 100% !important;
+                padding: 15px !important;
+                padding-top: 72px !important; /* Ensure content is below toggle button */
+                box-sizing: border-box;
+            }
+
+            /* Responsive Header & Cards */
+            .page-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 12px;
+            }
+
+            .page-header .d-flex {
+                width: 100%;
+                flex-wrap: wrap;
+                gap: 8px;
+            }
+
+            .stat-value, .kpi-val {
+                font-size: 1.5rem !important;
+            }
+
+            .card-header {
+                padding: 15px 18px !important;
+                flex-wrap: wrap;
+                gap: 10px;
+            }
+
+            .modal-dialog {
+                margin: 10px !important;
+                max-width: calc(100% - 20px) !important;
+            }
+
+            .modal-content {
+                padding: 10px;
+            }
+
+            /* Enable horizontal scroll on tables on mobile */
+            .table-responsive, .table-container {
+                overflow-x: auto !important;
+                -webkit-overflow-scrolling: touch;
+                margin-bottom: 15px;
+            }
+
+            .patient-card {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 12px;
+            }
+
+            .patient-contact {
+                width: 100%;
+                justify-content: space-between;
+                flex-wrap: wrap;
+                gap: 10px;
+            }
         }
 
         .content .row {
@@ -543,8 +671,8 @@
             margin-left: 0;
         }
         .content .container-fluid {
-            padding-right: 15px;
-            padding-left: 15px;
+            padding-right: 10px;
+            padding-left: 10px;
             max-width: 100%;
         }
 
@@ -625,21 +753,6 @@
             display: inline-block;
         }
 
-
-        /* htmx layout fixes */
-        html, body {
-            height: 100%;
-            margin: 0;
-        }
-
-        /* Ensure sidebar stays fixed during htmx swaps */
-        .sidebar {
-            position: fixed !important;
-            right: 0;
-            top: 0;
-            height: 100vh;
-            z-index: 1000;
-        }
 
         /* Content area adjustments (keep transition only) */
         .content { transition: opacity 0.2s ease; }
