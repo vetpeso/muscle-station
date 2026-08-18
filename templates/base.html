@@ -4,6 +4,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
     <title>{% block title %}نظام العيادة الذكي{% endblock %}</title>
+    <style>
+    @media (max-width: 991px) {
+        .sidebar { position:fixed!important; right:-320px!important; left:auto!important; width:82vw!important; max-width:290px!important; height:100vh!important; top:0!important; bottom:0!important; z-index:1050!important; transition:right 0.3s ease!important; box-shadow:-5px 0 25px rgba(0,0,0,0.6); }
+        .sidebar.open { right:0!important; }
+        .content { margin:0!important; width:100%!important; max-width:100vw!important; padding:10px!important; padding-top:68px!important; overflow-x:hidden!important; }
+        .sidebar-toggle-btn { display:flex!important; }
+    }
+    </style>
     <link href="/static/css/bootstrap.min.css" rel="stylesheet">
     <link href="/static/css/all.min.css" rel="stylesheet">
     <link href="/static/css/cairo-font.css" rel="stylesheet">
@@ -918,6 +926,45 @@
 
 <script src="/static/js/bootstrap.bundle.min.js"></script>
 <script src="/static/js/chart.umd.min.js"></script>
+<script>
+    // ── Mobile Layout Force Fix ──
+    (function() {
+        function applyMobileLayout() {
+            if (window.innerWidth < 992) {
+                var sidebar = document.getElementById('mainSidebar');
+                var content = document.querySelector('.content');
+                var toggleBtn = document.getElementById('sidebarToggle');
+                if (sidebar) {
+                    sidebar.style.position = 'fixed';
+                    sidebar.style.right = '-320px';
+                    sidebar.style.left = 'auto';
+                    sidebar.style.width = '82vw';
+                    sidebar.style.maxWidth = '290px';
+                    sidebar.style.height = '100vh';
+                    sidebar.style.top = '0';
+                    sidebar.style.zIndex = '1050';
+                    sidebar.style.transition = 'right 0.3s ease';
+                    sidebar.style.boxShadow = '-5px 0 25px rgba(0,0,0,0.6)';
+                }
+                if (content) {
+                    content.style.marginRight = '0';
+                    content.style.marginLeft = '0';
+                    content.style.width = '100%';
+                    content.style.maxWidth = '100vw';
+                    content.style.padding = '10px';
+                    content.style.paddingTop = '68px';
+                    content.style.overflowX = 'hidden';
+                }
+                if (toggleBtn) {
+                    toggleBtn.style.display = 'flex';
+                }
+                document.body.style.overflowX = 'hidden';
+            }
+        }
+        applyMobileLayout();
+        window.addEventListener('resize', applyMobileLayout);
+    })();
+</script>
 <script>
     // إخفاء رسائل الفلاش تلقائياً
     setTimeout(function() {
