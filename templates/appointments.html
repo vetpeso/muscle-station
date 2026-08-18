@@ -1,0 +1,689 @@
+{% extends 'base.html' %}
+{% block title %}جدول مواعيد الجلسات والباقات - نظام العيادة{% endblock %}
+
+{% block content %}
+
+<style>
+    .weekday-selector {
+        background: var(--card-bg);
+        border-radius: 16px;
+        padding: 15px;
+        border: 1px solid var(--border-color);
+        margin-bottom: 25px;
+        display: flex;
+        justify-content: space-between;
+        gap: 8px;
+        flex-wrap: wrap;
+    }
+
+    .weekday-btn {
+        flex: 1;
+        min-width: 100px;
+        padding: 12px 10px;
+        border-radius: 12px;
+        background: rgba(255,255,255,0.03);
+        border: 1px solid rgba(255,255,255,0.08);
+        color: var(--text-muted);
+        font-weight: 700;
+        font-size: 0.95rem;
+        transition: all 0.3s ease;
+        text-align: center;
+        text-decoration: none;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 4px;
+    }
+
+    .weekday-btn:hover {
+        background: rgba(255,255,255,0.07);
+        border-color: rgba(255,255,255,0.2);
+        color: var(--text-main);
+    }
+
+    .weekday-btn.active {
+        background: linear-gradient(135deg, var(--accent-purple), var(--accent-blue));
+        color: white;
+        border-color: transparent;
+        box-shadow: 0 4px 15px rgba(139, 92, 246, 0.4);
+    }
+
+    .weekday-btn.today-highlight:not(.active) {
+        border-color: var(--accent-orange);
+        color: var(--accent-orange);
+    }
+
+    .today-tag {
+        font-size: 0.7rem;
+        background: rgba(245, 158, 11, 0.2);
+        color: var(--accent-orange);
+        padding: 1px 6px;
+        border-radius: 6px;
+        font-weight: 900;
+    }
+
+    .section-title {
+        font-size: 1.25rem;
+        font-weight: 800;
+        color: var(--text-main);
+        margin-bottom: 20px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .appointment-card {
+        background: linear-gradient(145deg, rgba(30, 41, 59, 0.45), rgba(15, 23, 42, 0.55));
+        border-radius: 18px;
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        padding: 20px 24px;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        position: relative;
+        overflow: hidden;
+        margin-bottom: 20px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+    }
+
+    .appointment-card:hover {
+        border-color: rgba(139, 92, 246, 0.45);
+        transform: translateY(-2px);
+        box-shadow: 0 12px 30px rgba(0, 0, 0, 0.35);
+        background: linear-gradient(145deg, rgba(30, 41, 59, 0.6), rgba(15, 23, 42, 0.7));
+    }
+
+    .appointment-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        right: 0;
+        width: 4px;
+        height: 100%;
+        background: linear-gradient(to bottom, var(--accent-purple), var(--accent-blue));
+        opacity: 0.85;
+    }
+
+    .patient-name {
+        font-weight: 900;
+        font-size: 1.25rem;
+        color: #f8fafc;
+        text-decoration: none;
+        transition: all 0.2s ease;
+        display: block;
+        max-width: 100%;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .patient-name:hover {
+        color: var(--accent-blue);
+    }
+
+    .phone-link {
+        color: var(--accent-blue);
+        text-decoration: none;
+        font-weight: 700;
+        transition: color 0.2s ease;
+    }
+
+    .phone-link:hover {
+        color: #60a5fa;
+        text-decoration: none;
+    }
+
+    .patient-meta-item {
+        font-size: 0.88rem;
+        color: #cbd5e1;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .progress-section-wrapper {
+        background: rgba(15, 23, 42, 0.45);
+        padding: 14px 18px;
+        border-radius: 12px;
+        border: 1px solid rgba(255, 255, 255, 0.04);
+    }
+
+    .progress-bar-label {
+        font-size: 0.82rem;
+        font-weight: 800;
+        display: flex;
+        justify-content: space-between;
+        color: #cbd5e1;
+    }
+
+    .custom-progress {
+        height: 8px;
+        background: rgba(255, 255, 255, 0.08);
+        border-radius: 8px;
+        overflow: hidden;
+    }
+
+    .custom-progress-bar {
+        height: 100%;
+        background: linear-gradient(90deg, var(--accent-blue), var(--accent-purple));
+        border-radius: 8px;
+        transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .day-badge {
+        font-size: 0.72rem;
+        padding: 3px 8px;
+        border-radius: 6px;
+        background: rgba(139, 92, 246, 0.12);
+        color: #a78bfa;
+        font-weight: 700;
+        border: 1px solid rgba(139, 92, 246, 0.2);
+    }
+
+    .empty-state {
+        background: var(--card-bg);
+        border-radius: 20px;
+        border: 1px dashed var(--border-color);
+        padding: 60px 20px;
+        text-align: center;
+        margin-bottom: 30px;
+    }
+
+    .empty-icon {
+        font-size: 3.5rem;
+        color: var(--text-muted);
+        margin-bottom: 15px;
+        opacity: 0.5;
+    }
+
+    .btn-attend {
+        background: linear-gradient(135deg, var(--accent-green), #059669);
+        color: white;
+        font-weight: 800;
+        border: none;
+        padding: 10px 18px;
+        border-radius: 10px;
+        transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        text-decoration: none;
+        white-space: nowrap;
+        box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);
+    }
+
+    .btn-attend:hover {
+        background: linear-gradient(135deg, #10b981, #047857);
+        color: white;
+        transform: translateY(-2px);
+        box-shadow: 0 6px 18px rgba(16, 185, 129, 0.35);
+    }
+
+    .btn-outline-attend {
+        background: rgba(56, 189, 248, 0.03);
+        border: 1px solid rgba(56, 189, 248, 0.25);
+        color: #38bdf8;
+        font-weight: 800;
+        padding: 10px 18px;
+        border-radius: 10px;
+        transition: all 0.2s ease;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        text-decoration: none;
+        white-space: nowrap;
+    }
+
+    .btn-outline-attend:hover {
+        background: rgba(56, 189, 248, 0.1);
+        border-color: #38bdf8;
+        color: #38bdf8;
+        transform: translateY(-2px);
+        box-shadow: 0 6px 15px rgba(56, 189, 248, 0.2);
+    }
+
+    .btn-absent {
+        background: rgba(239,68,68,0.08);
+        border: 1px solid rgba(239,68,68,0.2);
+        color: #f87171;
+        font-weight: 800;
+        padding: 10px 14px;
+        border-radius: 10px;
+        transition: all 0.2s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        white-space: nowrap;
+        cursor: pointer;
+    }
+    .btn-absent:hover {
+        background: rgba(239,68,68,0.15);
+        border-color: #ef4444;
+        color: #ef4444;
+        transform: translateY(-2px);
+    }
+    .btn-absent-sm {
+        background: rgba(239,68,68,0.08);
+        border: 1px solid rgba(239,68,68,0.2);
+        color: #f87171;
+        padding: 10px 12px;
+        border-radius: 10px;
+        transition: all 0.2s ease;
+        display: inline-flex;
+        align-items: center;
+        cursor: pointer;
+    }
+    .btn-absent-sm:hover {
+        background: rgba(239,68,68,0.15);
+        border-color: #ef4444;
+        color: #ef4444;
+    }
+
+    .collapse-header-btn {
+        background: var(--card-bg);
+        border: 1px solid var(--border-color);
+        color: var(--text-main);
+        width: 100%;
+        text-align: right;
+        padding: 15px 20px;
+        border-radius: 16px;
+        font-weight: 800;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+
+    .collapse-header-btn:hover {
+        border-color: var(--border-color);
+        background: rgba(255,255,255,0.02);
+    }
+
+    .collapse-header-btn[aria-expanded="true"] {
+        border-bottom-left-radius: 0;
+        border-bottom-right-radius: 0;
+        border-color: var(--accent-purple);
+    }
+
+    .collapse-body-box {
+        background: var(--card-bg);
+        border: 1px solid var(--border-color);
+        border-top: none;
+        padding: 20px;
+        border-bottom-left-radius: 16px;
+        border-bottom-right-radius: 16px;
+    }
+
+    .type-badge {
+        font-size: 0.72rem;
+        padding: 4px 10px;
+        border-radius: 6px;
+        font-weight: 800;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        border: 1px solid transparent;
+        width: fit-content;
+    }
+    .badge-package {
+        background: rgba(139, 92, 246, 0.1);
+        color: #a78bfa;
+        border-color: rgba(139, 92, 246, 0.2);
+    }
+    .badge-rehab {
+        background: rgba(16, 185, 129, 0.1);
+        color: #34d399;
+        border-color: rgba(16, 185, 129, 0.2);
+    }
+
+    .weekday-btn span.day-date {
+        font-size: 0.8rem;
+        opacity: 0.95;
+        font-weight: 800;
+        color: #94a3b8;
+        display: block;
+        margin-top: 2px;
+    }
+    .weekday-btn.active span.day-date {
+        color: #f1f5f9;
+    }
+    .weekday-btn.today-highlight:not(.active) span.day-date {
+        color: var(--accent-orange);
+    }
+
+    .print-header { display: none; }
+    .print-table { display: none; }
+
+    @media print {
+        @page { size: A4; margin: 1.5cm; }
+        .sidebar, .sidebar-toggle-btn, .sidebar-footer, .no-print, .flash-messages, .weekday-selector, .section-title, .row { display: none !important; }
+        .content { margin: 0 !important; padding: 0 !important; width: 100% !important; }
+        body { background: white !important; color: #111 !important; }
+        .print-header { display: block !important; text-align: center; margin-bottom: 25px; }
+        .print-header h2 { font-size: 1.8rem; font-weight: 900; color: #0f172a; margin-bottom: 4px; }
+        .print-header p { font-size: 1rem; color: #475569; margin-bottom: 2px; }
+        .print-header hr { border-top: 2px solid #0f172a; margin-top: 12px; }
+
+        .appointment-card { background: white !important; color: #111 !important; border: 1px solid #ccc !important; box-shadow: none !important; border-radius: 0 !important; padding: 10px 14px !important; margin-bottom: 6px !important; page-break-inside: avoid; }
+        .appointment-card::before { display: none !important; }
+        .appointment-card:hover { transform: none !important; box-shadow: none !important; border-color: #ccc !important; background: white !important; }
+        .patient-name { color: #111 !important; font-size: 0.95rem !important; }
+        .phone-link { color: #111 !important; text-decoration: none !important; }
+        .progress-section-wrapper { background: transparent !important; border: none !important; padding: 4px 0 !important; }
+        .progress-bar-label span { color: #111 !important; }
+        .custom-progress { background: #e5e7eb !important; height: 6px !important; }
+        .custom-progress-bar { background: #6366f1 !important; }
+        .btn-attend, .btn-outline-attend, .btn-absent, .btn-absent-sm, .collapse-header-btn { display: none !important; }
+        .type-badge { border: 1px solid #aaa !important; }
+        .badge-package { background: #e0e7ff !important; color: #3730a3 !important; }
+        .badge-rehab { background: #d1fae5 !important; color: #065f46 !important; }
+        .day-badge { background: #fef3c7 !important; color: #92400e !important; border-color: #fbbf24 !important; }
+        .patient-meta-item { color: #333 !important; }
+        .text-muted { color: #666 !important; }
+        .section-title { color: #111 !important; }
+        .collapse { display: none !important; }
+        .print-table { display: block !important; margin-top: 20px; }
+        .print-table table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+        .print-table th { background: #f1f5f9; color: #111; font-weight: 800; padding: 8px 10px; border: 1px solid #ccc; text-align: right; }
+        .print-table td { padding: 7px 10px; border: 1px solid #ccc; color: #111; vertical-align: middle; }
+        .print-table tr:nth-child(even) { background: #f9fafb; }
+        .print-table .empty-msg { text-align: center; color: #666; padding: 20px; }
+    }
+</style>
+
+<div class="container-fluid py-4">
+    
+    <div class="print-header">
+        <h2>{{ settings['clinic_name'] if settings and settings['clinic_name'] else 'Muscle Station' }}</h2>
+        <p>جدول مواعيد الجلسات والباقات</p>
+        <p>اليوم: <strong>{{ selected_day }}</strong> — التاريخ: <strong>{{ selected_day_date }}</strong></p>
+        <p>عدد الحالات المجدولة: <strong>{{ scheduled_patients|length }}</strong></p>
+        <hr>
+    </div>
+
+    <div class="print-table">
+        {% if scheduled_patients %}
+        <table>
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>اسم المريض</th>
+                    <th>الكود</th>
+                    <th>رقم الهاتف</th>
+                    <th>النوع</th>
+                    <th>الموعد</th>
+                    <th>الجلسات</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for p in scheduled_patients %}
+                <tr>
+                    <td>{{ loop.index }}</td>
+                    <td style="font-weight:800;">{{ p.name }}</td>
+                    <td>{{ p.patient_code or '' }}</td>
+                    <td>{{ p.phone }}</td>
+                    <td>{% if p.type == 'الباقات' %}باقة جلسات{% else %}جلسة تأهيل{% endif %}</td>
+                    <td>{{ p.session_time|to12h }}</td>
+                    <td>{{ p.completed_sessions }} / {{ p.total_sessions }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <div class="empty-msg">لا توجد حالات مجدولة لهذا اليوم.</div>
+        {% endif %}
+    </div>
+
+    <!-- رأس الصفحة -->
+    <div class="d-flex justify-content-between align-items-center mb-4 no-print">
+        <div>
+            <h1 class="h3 mb-1" style="font-weight: 900; color: var(--text-main);">
+                <i class="fas fa-calendar-check text-purple" style="color: var(--accent-purple);"></i> جدول مواعيد الجلسات والباقات
+            </h1>
+            <p class="text-muted small mb-0">متابعة الحالات التي لديها جلسات أو باقات نشطة اليوم وتصفية باقي الأيام.</p>
+        </div>
+        <div class="d-flex align-items-center gap-3 no-print">
+            <button onclick="window.print()" class="btn btn-outline-light btn-sm d-flex align-items-center gap-2">
+                <i class="fas fa-print"></i> طباعة جدول اليوم
+            </button>
+            <div class="text-muted small">
+                اليوم الحالي: <span class="badge bg-warning text-dark font-weight-bold" style="font-size: 0.9rem;">{{ today_weekday_name }}</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- شريط تصفية الأيام -->
+    <div class="weekday-selector">
+        {% for day_info in weekdays_list %}
+        <a href="/appointments?day={{ day_info.name }}" class="weekday-btn {% if day_info.name == selected_day %}active{% endif %} {% if day_info.name == today_weekday_name %}today-highlight{% endif %}">
+            <span>{{ day_info.name }}</span>
+            <span class="day-date">{{ day_info.short_date }}</span>
+            {% if day_info.name == today_weekday_name %}
+            <span class="today-tag mt-1">اليوم</span>
+            {% endif %}
+        </a>
+        {% endfor %}
+    </div>
+
+    <!-- قسم الحالات المجدولة لليوم المختار -->
+    <div class="section-title">
+        <i class="fas fa-user-clock text-info"></i>
+        <span>الحالات المقرر حضورها لليوم ({{ selected_day }})</span>
+        <span class="badge bg-info text-dark" style="font-size: 0.85rem; border-radius: 10px;">{{ scheduled_patients|length }} حالات</span>
+    </div>
+
+    {% if scheduled_patients %}
+    <div class="row">
+        {% for p in scheduled_patients %}
+        <div class="col-12 col-xl-6">
+            <div class="appointment-card">
+                <div class="row g-3">
+                    <div class="col-md-5 col-12">
+                        <div class="mb-2">
+                            <a href="/patient/{{ p.id }}" class="patient-name text-truncate">
+                                {{ p.name }}
+                            </a>
+                        </div>
+                        <div class="d-flex align-items-center gap-2 flex-wrap mb-2">
+                            {% if p.type == 'الباقات' %}
+                            <span class="type-badge badge-package"><i class="fas fa-box"></i> باقة جلسات</span>
+                            {% else %}
+                            <span class="type-badge badge-rehab"><i class="fas fa-running"></i> جلسة تأهيل</span>
+                            {% endif %}
+                            
+                            {% if p.patient_code %}
+                            <span class="type-badge" style="background: rgba(99, 102, 241, 0.15); color: #a5b4fc; border-color: rgba(99, 102, 241, 0.35); font-size: 0.88rem; padding: 4px 12px; font-weight: 800; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.15);">
+                                <i class="fas fa-hashtag" style="font-size: 0.78rem;"></i> {{ p.patient_code }}
+                            </span>
+                            {% endif %}
+                            
+                            {% if p.session_time %}
+                            <span class="type-badge" style="background: rgba(245, 158, 11, 0.15); color: #fbbf24; border-color: rgba(245, 158, 11, 0.3); font-size: 0.85rem; padding: 4px 10px; font-weight: 800; border-radius: 8px;">
+                                <i class="fas fa-clock" style="font-size: 0.78rem;"></i> {{ selected_day }} {{ p.session_time|to12h }}
+                            </span>
+                            {% endif %}
+                        </div>
+                        <div class="mb-2">
+                            <span class="patient-phone">
+                                <i class="fas fa-phone text-success" style="font-size: 0.8rem; margin-left: 2px;"></i> 
+                                <a href="tel:{{ p.phone }}" class="phone-link">{{ p.phone }}</a>
+                            </span>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-7 col-12 d-flex flex-column gap-3">
+                        <div class="progress-section-wrapper">
+                            <div class="d-flex align-items-center gap-2 mb-2 pb-2" style="border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 0.8rem;">
+                                <i class="fas fa-clock text-warning"></i>
+                                <span class="text-muted">ميعاد الجلسة:</span>
+                                <span class="day-badge" style="font-size: 0.78rem; background: rgba(245, 158, 11, 0.15); color: #fbbf24; border-color: rgba(245, 158, 11, 0.3);">{{ selected_day }}</span>
+                                <span class="text-main fw-bold" style="direction: ltr;">{{ p.session_time|to12h }}</span>
+                            </div>
+
+                            <div class="progress-bar-label mb-1">
+                                {% if p.type == 'الباقات' %}
+                                <span>جلسات الباقة</span>
+                                <span>{{ p.completed_sessions }} / {{ p.total_sessions }}</span>
+                                {% else %}
+                                <span>عدد الجلسات</span>
+                                <span>{{ p.completed_sessions }} / {{ p.total_sessions }}</span>
+                                {% endif %}
+                            </div>
+                            <div class="custom-progress">
+                                <div class="custom-progress-bar" style="width: {{ p.progress_percent }}%; {% if p.type != 'الباقات' %}background: linear-gradient(90deg, var(--accent-green), var(--accent-blue));{% endif %}"></div>
+                            </div>
+                        </div>
+
+                        <div class="d-flex gap-2">
+                            <a href="/patient/{{ p.id }}?action=add_followup" class="btn-attend flex-fill justify-content-center">
+                                <i class="fas fa-check-circle"></i> حضور الجلسة
+                            </a>
+                            <form method="POST" action="/mark_absence/{{ p.id }}" class="d-inline">
+                                <input type="hidden" name="day" value="{{ selected_day }}">
+                                <input type="hidden" name="visit_date" value="{{ selected_day_date }}">
+                                <button type="submit" class="btn-absent" onclick="return confirm('تسجيل غياب {{ p.name }}؟')">
+                                    <i class="fas fa-times-circle"></i> غياب
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- قسم الحالات النشطة في أيام أخرى -->
+    <div class="mt-4">
+        <button class="collapse-header-btn" type="button" data-bs-toggle="collapse" data-bs-target="#otherCasesCollapse" aria-expanded="false">
+            <span>
+                <i class="fas fa-users-cog text-purple" style="color: var(--accent-purple); margin-left: 8px;"></i>
+                باقي الحالات النشطة (غير مجدولين اليوم)
+            </span>
+            <div class="d-flex align-items-center gap-2">
+                <span class="badge bg-secondary text-light">{{ other_active_patients|length }}</span>
+                <i class="fas fa-chevron-down text-muted" style="transition: transform 0.2s;"></i>
+            </div>
+        </button>
+        
+        <div class="collapse" id="otherCasesCollapse">
+            <div class="collapse-body-box">
+                {% if other_active_patients %}
+                <div class="row">
+                    {% for p in other_active_patients %}
+                    <div class="col-12 col-xl-6">
+                        <div class="appointment-card" style="opacity: 0.85;">
+                            <div class="row g-3">
+                                <div class="col-md-5 col-12">
+                                    <div class="mb-2">
+                                        <a href="/patient/{{ p.id }}" class="patient-name text-truncate">
+                                            {{ p.name }}
+                                        </a>
+                                    </div>
+                                    <div class="d-flex align-items-center gap-2 flex-wrap mb-2">
+                                        {% if p.type == 'الباقات' %}
+                                        <span class="type-badge badge-package"><i class="fas fa-box"></i> باقة جلسات</span>
+                                        {% else %}
+                                        <span class="type-badge badge-rehab"><i class="fas fa-running"></i> جلسة تأهيل</span>
+                                        {% endif %}
+                                        
+                                        {% if p.patient_code %}
+                                        <span class="type-badge" style="background: rgba(99, 102, 241, 0.15); color: #a5b4fc; border-color: rgba(99, 102, 241, 0.35); font-size: 0.88rem; padding: 4px 12px; font-weight: 800; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.15);">
+                                            <i class="fas fa-hashtag" style="font-size: 0.78rem;"></i> {{ p.patient_code }}
+                                        </span>
+                                        {% endif %}
+                                        
+                                        {% if p.session_time %}
+                                        <span class="type-badge" style="background: rgba(245, 158, 11, 0.15); color: #fbbf24; border-color: rgba(245, 158, 11, 0.3); font-size: 0.85rem; padding: 4px 10px; font-weight: 800; border-radius: 8px;">
+                                            <i class="fas fa-clock" style="font-size: 0.78rem;"></i> {% if p.session_days and p.session_days|length > 0 %}{{ p.session_days[0] }} {% endif %}{{ p.session_time|to12h }}
+                                        </span>
+                                        {% endif %}
+                                    </div>
+                                    <div class="mb-2">
+                                        <span class="patient-phone">
+                                            <i class="fas fa-phone text-success" style="font-size: 0.8rem; margin-left: 2px;"></i> 
+                                            <a href="tel:{{ p.phone }}" class="phone-link">{{ p.phone }}</a>
+                                        </span>
+                                    </div>
+                                    {% if p.session_days %}
+                                    <div class="mt-2 d-flex align-items-center gap-2 flex-wrap">
+                                        <span class="text-muted small" style="font-size: 0.78rem;"><i class="fas fa-calendar-alt text-info"></i> أيام الجلسات:</span>
+                                        <div class="d-flex gap-1 flex-wrap">
+                                            {% for day in p.session_days %}
+                                            <span class="day-badge">{{ day }}</span>
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                    {% endif %}
+                                </div>
+                                
+                                <div class="col-md-7 col-12 d-flex flex-column gap-3">
+                                    <div class="progress-section-wrapper">
+                                        <div class="d-flex align-items-center gap-2 mb-2 pb-2" style="border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 0.8rem;">
+                                            <i class="fas fa-clock text-warning"></i>
+                                            <span class="text-muted">ميعاد الجلسة:</span>
+                                            {% if p.session_days and p.session_days|length > 0 %}
+                                            <span class="day-badge" style="font-size: 0.78rem; background: rgba(245, 158, 11, 0.15); color: #fbbf24; border-color: rgba(245, 158, 11, 0.3);">{{ p.session_days[0] }}</span>
+                                            {% endif %}
+                                <span class="text-main fw-bold" style="direction: ltr;">{{ p.session_time|to12h }}</span>
+                                        </div>
+
+                                        <div class="progress-bar-label mb-1">
+                                            {% if p.type == 'الباقات' %}
+                                            <span>جلسات الباقة</span>
+                                            <span>{{ p.completed_sessions }} / {{ p.total_sessions }}</span>
+                                            {% else %}
+                                            <span>عدد الجلسات</span>
+                                            <span>{{ p.completed_sessions }} / {{ p.total_sessions }}</span>
+                                            {% endif %}
+                                        </div>
+                                        <div class="custom-progress">
+                                            <div class="custom-progress-bar" style="width: {{ p.progress_percent }}%; background: #64748b;"></div>
+                                        </div>
+                                    </div>
+
+                                    <div class="d-flex gap-2">
+                                        <a href="/patient/{{ p.id }}?action=add_followup" class="btn-outline-attend flex-fill">
+                                            حضور (خارج الجدول)
+                                        </a>
+                                        <form method="POST" action="/mark_absence/{{ p.id }}" class="d-inline">
+                                            <input type="hidden" name="day" value="{{ selected_day }}">
+                                            <input type="hidden" name="visit_date" value="{{ selected_day_date }}">
+                                            <button type="submit" class="btn-absent-sm" onclick="return confirm('تسجيل غياب {{ p.name }}؟')">
+                                                <i class="fas fa-times-circle"></i>
+                                            </button>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="text-center py-4 text-muted">
+                    لا توجد حالات نشطة أخرى غير مجدولة.
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    const collapseEl = document.getElementById('otherCasesCollapse');
+    const collapseBtn = document.querySelector('.collapse-header-btn');
+    if (collapseEl && collapseBtn) {
+        const icon = collapseBtn.querySelector('.fa-chevron-down');
+        collapseEl.addEventListener('show.bs.collapse', () => {
+            icon.style.transform = 'rotate(180deg)';
+        });
+        collapseEl.addEventListener('hide.bs.collapse', () => {
+            icon.style.transform = 'rotate(0deg)';
+        });
+    }
+</script>
+
+{% endblock %}

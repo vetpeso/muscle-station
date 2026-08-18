@@ -1,0 +1,1371 @@
+{% extends 'base.html' %}
+{% block title %}الحالات اليومية - نظام العيادة{% endblock %}
+
+{% block content %}
+
+<style>
+
+    /* ===== ENTRANCE ANIMATION ===== */
+    @keyframes fadeSlideUp {
+        from { opacity: 0; transform: translateY(20px); }
+        to   { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes fadeSlideIn {
+        from { opacity: 0; transform: translateX(20px); }
+        to   { opacity: 1; transform: translateX(0); }
+    }
+    @keyframes pulseGlow {
+        0%, 100% { box-shadow: 0 0 0 0 rgba(14,165,233,0); }
+        50%      { box-shadow: 0 0 20px 4px rgba(14,165,233,0.1); }
+    }
+    @keyframes countUp {
+        from { opacity: 0; transform: scale(0.5); }
+        to   { opacity: 1; transform: scale(1); }
+    }
+
+    /* ===== STATS ROW ===== */
+    .daily-stats {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 16px;
+        margin-bottom: 28px;
+        width: 100%;
+        box-sizing: border-box;
+    }
+
+    .daily-stat-card {
+        background: linear-gradient(135deg, rgba(30,41,59,0.9), rgba(30,41,59,0.6));
+        backdrop-filter: blur(12px);
+        border-radius: 20px;
+        border: 1px solid rgba(255,255,255,0.06);
+        padding: 22px 24px;
+        display: flex;
+        align-items: center;
+        gap: 18px;
+        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        position: relative;
+        overflow: hidden;
+        animation: fadeSlideUp 0.5s ease backwards;
+    }
+    .daily-stat-card:nth-child(1) { animation-delay: 0s; }
+    .daily-stat-card:nth-child(2) { animation-delay: 0.1s; }
+    .daily-stat-card:nth-child(3) { animation-delay: 0.2s; }
+    .daily-stat-card:nth-child(4) { animation-delay: 0.3s; }
+
+    .daily-stat-card::after {
+        content: '';
+        position: absolute;
+        top: 0; left: 0; right: 0;
+        height: 1px;
+        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+    }
+
+    .daily-stat-card:hover {
+        transform: translateY(-4px);
+        border-color: rgba(255,255,255,0.12);
+        box-shadow: 0 20px 40px -8px rgba(0,0,0,0.4);
+    }
+
+    .stat-icon-box {
+        width: 54px;
+        height: 54px;
+        border-radius: 16px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.4rem;
+        flex-shrink: 0;
+        position: relative;
+    }
+
+    .stat-icon-box.blue   { background: linear-gradient(135deg, rgba(14,165,233,0.2), rgba(14,165,233,0.05));  color: #38bdf8; box-shadow: 0 4px 15px rgba(14,165,233,0.15); }
+    .stat-icon-box.green  { background: linear-gradient(135deg, rgba(16,185,129,0.2), rgba(16,185,129,0.05));  color: #34d399; box-shadow: 0 4px 15px rgba(16,185,129,0.15); }
+    .stat-icon-box.orange { background: linear-gradient(135deg, rgba(245,158,11,0.2), rgba(245,158,11,0.05));  color: #fbbf24; box-shadow: 0 4px 15px rgba(245,158,11,0.15); }
+    .stat-icon-box.red    { background: linear-gradient(135deg, rgba(239,68,68,0.2), rgba(239,68,68,0.05));    color: #f87171; box-shadow: 0 4px 15px rgba(239,68,68,0.15); }
+
+    .stat-info { flex: 1; }
+    .stat-value { font-size: 2rem; font-weight: 900; line-height: 1.1; letter-spacing: -1px; }
+    .stat-label { font-size: 0.82rem; color: rgba(203,213,225,0.85); margin-top: 2px; font-weight: 600; }
+
+    /* ===== DATE BAR ===== */
+    .date-bar {
+        background: linear-gradient(135deg, rgba(30,41,59,0.8), rgba(15,23,42,0.6));
+        backdrop-filter: blur(12px);
+        border-radius: 18px;
+        border: 1px solid rgba(255,255,255,0.06);
+        padding: 14px 20px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 24px;
+        flex-wrap: wrap;
+        animation: fadeSlideUp 0.5s ease 0.15s backwards;
+    }
+
+    .date-bar .form-control,
+    .date-bar .form-select {
+        background: rgba(15,23,42,0.8);
+        border: 1px solid rgba(255,255,255,0.08);
+        color: var(--text-main);
+        border-radius: 12px;
+        padding: 9px 14px;
+        font-size: 0.88rem;
+        transition: all 0.25s ease;
+    }
+    .date-bar .form-control:focus,
+    .date-bar .form-select:focus {
+        border-color: rgba(14,165,233,0.5);
+        box-shadow: 0 0 0 3px rgba(14,165,233,0.1);
+        background: rgba(15,23,42,0.95);
+    }
+
+    .date-nav-btn {
+        background: rgba(15,23,42,0.8);
+        border: 1px solid rgba(255,255,255,0.08);
+        color: var(--text-muted);
+        border-radius: 12px;
+        width: 38px;
+        height: 38px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.25s ease;
+        text-decoration: none;
+    }
+    .date-nav-btn:hover {
+        border-color: rgba(14,165,233,0.4);
+        color: var(--accent-blue);
+        background: rgba(14,165,233,0.08);
+    }
+
+    .today-badge {
+        background: linear-gradient(135deg, rgba(14,165,233,0.15), rgba(99,102,241,0.1));
+        color: var(--accent-blue);
+        border: 1px solid rgba(14,165,233,0.25);
+        border-radius: 12px;
+        padding: 7px 16px;
+        font-size: 0.85rem;
+        font-weight: 700;
+        white-space: nowrap;
+        transition: all 0.25s ease;
+    }
+    .today-badge:hover {
+        background: linear-gradient(135deg, rgba(14,165,233,0.25), rgba(99,102,241,0.15));
+        border-color: rgba(14,165,233,0.4);
+        transform: translateY(-1px);
+    }
+
+    /* ===== CASE CARDS ===== */
+    .cases-list { display: flex; flex-direction: column; gap: 14px; }
+
+    .case-card {
+        background: linear-gradient(135deg, rgba(30,41,59,0.9), rgba(15,23,42,0.7));
+        backdrop-filter: blur(8px);
+        border-radius: 20px;
+        border: 1px solid rgba(255,255,255,0.06);
+        padding: 0;
+        overflow: hidden;
+        transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+        position: relative;
+        animation: fadeSlideIn 0.4s ease backwards;
+    }
+    .case-card:nth-child(1) { animation-delay: 0s; }
+    .case-card:nth-child(2) { animation-delay: 0.05s; }
+    .case-card:nth-child(3) { animation-delay: 0.1s; }
+    .case-card:nth-child(4) { animation-delay: 0.15s; }
+    .case-card:nth-child(5) { animation-delay: 0.2s; }
+    .case-card:nth-child(6) { animation-delay: 0.25s; }
+    .case-card:nth-child(7) { animation-delay: 0.3s; }
+    .case-card:nth-child(8) { animation-delay: 0.35s; }
+    .case-card:nth-child(9) { animation-delay: 0.4s; }
+    .case-card:nth-child(10){ animation-delay: 0.45s; }
+
+    .case-card::before {
+        content: '';
+        position: absolute;
+        top: 0; left: 0; right: 0;
+        height: 1px;
+        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.08), transparent);
+    }
+
+    .case-card:hover {
+        border-color: rgba(255,255,255,0.12);
+        box-shadow: 0 16px 40px -8px rgba(0,0,0,0.4);
+        transform: translateX(-4px) translateY(-2px);
+    }
+
+    .case-card-accent {
+        position: absolute;
+        right: 0; top: 0; bottom: 0;
+        width: 5px;
+        border-radius: 0 20px 20px 0;
+        box-shadow: 0 0 12px rgba(255,255,255,0.05);
+    }
+
+    .case-card-accent.new-patient { background: linear-gradient(180deg, #0ea5e9, #6366f1); }
+    .case-card-accent.followup    { background: linear-gradient(180deg, #10b981, #059669); }
+    .case-card-accent.chronic     { background: linear-gradient(180deg, #f59e0b, #d97706); }
+    .case-card-accent.emergency   { background: linear-gradient(180deg, #ef4444, #dc2626); }
+    .case-card-accent.normal      { background: linear-gradient(180deg, #8b5cf6, #7c3aed); }
+
+    .case-card-body {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        padding: 16px 22px 16px 22px;
+        padding-right: 30px;
+        width: 100%;
+        box-sizing: border-box;
+        flex-wrap: nowrap;
+    }
+
+    /* رقم الترتيب */
+    .case-number {
+        width: 38px;
+        height: 38px;
+        border-radius: 14px;
+        background: rgba(15,23,42,0.8);
+        border: 1px solid rgba(255,255,255,0.06);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 900;
+        font-size: 0.95rem;
+        color: rgba(203,213,225,0.7);
+        flex-shrink: 0;
+        font-feature-settings: "tnum";
+    }
+
+    /* أفاتار المريض */
+    .case-avatar {
+        width: 48px;
+        height: 48px;
+        border-radius: 16px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 1.4rem;
+        flex-shrink: 0;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+        border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .case-avatar.male {
+        background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+        box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+    }
+
+    .case-avatar.female {
+        background: linear-gradient(135deg, #ec4899, #be185d);
+        box-shadow: 0 4px 12px rgba(236, 72, 153, 0.3);
+    }
+
+    .case-info { flex: 1; min-width: 0; }
+
+    .case-name {
+        font-weight: 900;
+        font-size: 1.05rem;
+        color: var(--text-main);
+        margin-bottom: 3px;
+        letter-spacing: -0.3px;
+    }
+
+    .case-meta {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        flex-wrap: wrap;
+        font-size: 0.82rem;
+        color: rgba(203,213,225,0.75);
+    }
+
+    .case-meta span { display: flex; align-items: center; gap: 5px; }
+
+    /* الشُعَيرات (badges) */
+    .type-badge {
+        padding: 6px 14px;
+        border-radius: 20px;
+        font-size: 0.78rem;
+        font-weight: 700;
+        white-space: nowrap;
+        letter-spacing: 0.3px;
+        border: 1px solid transparent;
+    }
+
+    .type-badge.new-patient { background: rgba(14,165,233,0.12);  color: #38bdf8; border-color: rgba(14,165,233,0.2); }
+    .type-badge.followup    { background: rgba(16,185,129,0.12);  color: #34d399; border-color: rgba(16,185,129,0.2); }
+    .type-badge.chronic     { background: rgba(245,158,11,0.12);  color: #fbbf24; border-color: rgba(245,158,11,0.2); }
+    .type-badge.emergency   { background: rgba(239,68,68,0.12);   color: #f87171; border-color: rgba(239,68,68,0.2); }
+    .type-badge.normal      { background: rgba(139,92,246,0.12);  color: #a78bfa; border-color: rgba(139,92,246,0.2); }
+
+    /* حالة الدفع */
+    .pay-badge {
+        padding: 6px 14px;
+        border-radius: 20px;
+        font-size: 0.78rem;
+        font-weight: 700;
+        white-space: nowrap;
+        border: 1px solid transparent;
+    }
+
+    .pay-badge.paid     { background: rgba(16,185,129,0.12); color: #34d399; border-color: rgba(16,185,129,0.2); }
+    .pay-badge.unpaid   { background: rgba(239,68,68,0.12);  color: #f87171; border-color: rgba(239,68,68,0.2); }
+
+    /* تكلفة الزيارة */
+    .cost-section {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-end;
+        gap: 4px;
+        min-width: 100px;
+    }
+    .case-cost {
+        font-weight: 900;
+        font-size: 1.15rem;
+        color: var(--accent-green);
+        white-space: nowrap;
+        letter-spacing: -0.5px;
+    }
+    .cost-detail {
+        font-size: 0.75rem;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 3px;
+    }
+    .cost-detail.paid  { color: var(--accent-green); }
+    .cost-detail.remaining { color: var(--accent-red); }
+
+    /* أزرار الإجراء — مطابقة لنظام الأزرار العام */
+    .case-actions { display: flex; align-items: center; gap: 6px; }
+
+    .action-btn {
+        width: 36px;
+        height: 36px;
+        border-radius: 12px;
+        border: none;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-decoration: none;
+        font-size: 0.9rem;
+        color: #fff;
+    }
+
+    .action-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 20px rgba(0,0,0,0.25);
+    }
+
+    .action-btn.blue-btn   { background: linear-gradient(135deg, var(--accent-blue), #0284c7); }
+    .action-btn.green-btn  { background: linear-gradient(135deg, var(--accent-green), #059669); }
+    .action-btn.red-btn    { background: linear-gradient(135deg, var(--accent-red), #dc2626); }
+    .action-btn.purple-btn { background: linear-gradient(135deg, var(--accent-purple), #7c3aed); }
+
+    .action-btn.blue-btn:hover   { box-shadow: 0 8px 20px -4px rgba(14,165,233,0.4); }
+    .action-btn.green-btn:hover  { box-shadow: 0 8px 20px -4px rgba(16,185,129,0.4); }
+    .action-btn.red-btn:hover    { box-shadow: 0 8px 20px -4px rgba(239,68,68,0.4); }
+    .action-btn.purple-btn:hover { box-shadow: 0 8px 20px -4px rgba(139,92,246,0.4); }
+
+    /* ===== حقل التشخيص المضمّن ===== */
+    .case-diagnosis {
+        padding: 0 22px 16px 22px;
+        padding-right: 30px;
+        border-top: 1px solid rgba(255,255,255,0.04);
+        margin-top: 0;
+    }
+
+    .diagnosis-text {
+        font-size: 0.85rem;
+        color: rgba(203,213,225,0.85);
+        padding: 10px 14px;
+        background: rgba(15,23,42,0.6);
+        border-radius: 12px;
+        border-right: 3px solid var(--accent-green);
+        margin-top: 12px;
+        line-height: 1.6;
+    }
+
+    /* ===== Empty State ===== */
+    .empty-state {
+        text-align: center;
+        padding: 80px 20px;
+        color: var(--text-muted);
+        animation: fadeSlideUp 0.6s ease;
+    }
+
+    .empty-icon {
+        font-size: 5rem;
+        opacity: 0.15;
+        margin-bottom: 20px;
+    }
+
+    /* ===== Modals ===== */
+    .modal-content {
+        background: linear-gradient(135deg, #1e293b, #0f172a);
+        border: 1px solid rgba(255,255,255,0.08);
+        border-radius: 24px;
+        box-shadow: 0 30px 60px rgba(0,0,0,0.5);
+    }
+
+    .modal-header {
+        border-bottom: 1px solid rgba(255,255,255,0.06);
+        padding: 20px 25px;
+    }
+
+    .modal-footer {
+        border-top: 1px solid rgba(255,255,255,0.06);
+        padding: 16px 25px;
+    }
+
+    .form-control, .form-select {
+        background: rgba(15,23,42,0.8);
+        border: 1px solid rgba(255,255,255,0.08);
+        color: var(--text-main);
+        border-radius: 12px;
+        padding: 10px 14px;
+        transition: all 0.25s ease;
+    }
+
+    .form-control:focus, .form-select:focus {
+        background: rgba(15,23,42,0.95);
+        border-color: rgba(14,165,233,0.5);
+        color: var(--text-main);
+        box-shadow: 0 0 0 3px rgba(14,165,233,0.1);
+    }
+
+    .form-label {
+        color: rgba(203,213,225,0.85);
+        font-size: 0.85rem;
+        font-weight: 600;
+        margin-bottom: 6px;
+    }
+
+    /* ===== Filter Tabs ===== */
+    .filter-tabs {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 20px;
+        flex-wrap: wrap;
+    }
+
+    .filter-tab {
+        padding: 8px 18px;
+        border-radius: 20px;
+        font-size: 0.85rem;
+        font-weight: 600;
+        cursor: pointer;
+        border: 1px solid rgba(255,255,255,0.06);
+        background: rgba(255,255,255,0.03);
+        color: var(--text-muted);
+        transition: all 0.25s ease;
+    }
+
+    .filter-tab:hover, .filter-tab.active {
+        background: rgba(14,165,233,0.12);
+        color: var(--accent-blue);
+        border-color: rgba(14,165,233,0.3);
+    }
+
+    @media (max-width: 991px) {
+        .daily-stats { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+    }
+    @media (max-width: 768px) {
+        .daily-stats { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+        .daily-stat-card { padding: 16px 18px; }
+        .stat-icon-box { width: 44px; height: 44px; font-size: 1.1rem; }
+        .stat-value { font-size: 1.5rem; }
+        .case-card-body { flex-wrap: wrap; gap: 10px; padding: 14px 18px; padding-right: 24px; }
+        .cost-section { min-width: 80px; }
+        .case-actions { gap: 5px; }
+        .action-btn { width: 32px; height: 32px; font-size: 0.78rem; }
+        .case-number { width: 32px; height: 32px; font-size: 0.85rem; }
+        .case-avatar { width: 40px; height: 40px; font-size: 1rem; }
+        .date-bar { flex-direction: column; align-items: stretch; gap: 10px; }
+        .date-bar form { flex-wrap: wrap; }
+    }
+    @media (max-width: 575px) {
+        .daily-stats { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+        .daily-stat-card { padding: 14px; gap: 12px; }
+        .stat-icon-box { width: 38px; height: 38px; font-size: 1rem; }
+        .stat-value { font-size: 1.3rem; }
+        .case-cost { font-size: 0.95rem; }
+        .type-badge, .pay-badge { font-size: 0.72rem; padding: 4px 10px; }
+        .cost-section { min-width: 70px; }
+        .page-header { flex-direction: column; align-items: flex-start; gap: 10px; }
+        .page-header .d-flex { flex-wrap: wrap; gap: 6px; }
+    }
+
+    .print-header { display: none; }
+
+    .day-checkbox { cursor:pointer; display:inline-flex; align-items:center; gap:4px; }
+    .day-checkbox input { display:none; }
+    .day-checkbox span {
+        display:inline-block; padding:6px 14px; border-radius:8px;
+        background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.1);
+        font-size:0.85rem; transition:all .2s; user-select:none;
+    }
+    .day-checkbox input:checked + span {
+        background:var(--accent-blue); border-color:var(--accent-blue);
+        color:#fff; box-shadow:0 0 12px rgba(14,165,233,0.3);
+    }
+    .day-checkbox span:hover { border-color:var(--accent-blue); }
+
+    @media print {
+        .sidebar, .btn, .flash-messages, .no-print, .date-bar, .case-actions { display: none !important; }
+        .content { margin-right: 0 !important; margin-left: 0 !important; width: 100% !important; padding: 20px !important; }
+        .print-header { display: block !important; text-align: center; margin-bottom: 25px; }
+        .print-header h2 { font-size: 1.8rem; font-weight: 900; color: #0f172a; margin-bottom: 5px; }
+        .print-header p { font-size: 1rem; color: #475569; margin: 0; }
+        
+        .case-card {
+            border: 1px solid #cbd5e1 !important;
+            background: #fff !important;
+            color: #0f172a !important;
+            box-shadow: none !important;
+            margin-bottom: 15px !important;
+            page-break-inside: avoid;
+        }
+        .case-card-body { padding: 12px 15px !important; }
+        .case-number {
+            border-color: #cbd5e1 !important;
+            color: #0f172a !important;
+            background: #f8fafc !important;
+        }
+        .case-avatar { display: none !important; }
+        .case-name { color: #0f172a !important; font-size: 1rem !important; }
+        .case-meta { color: #475569 !important; }
+        .type-badge {
+            border: 1px solid #cbd5e1 !important;
+            background: #f1f5f9 !important;
+            color: #0f172a !important;
+        }
+        .pay-badge {
+            border: 1px solid #cbd5e1 !important;
+            background: #f1f5f9 !important;
+            color: #0f172a !important;
+        }
+        .case-cost { color: #059669 !important; font-weight: 900 !important; }
+        .diagnosis-text {
+            background: #f8fafc !important;
+            border-right-color: #059669 !important;
+            color: #1e293b !important;
+            border: 1px solid #cbd5e1 !important;
+            border-right-width: 4px !important;
+        }
+    }
+</style>
+
+<!-- Print Header -->
+<div class="print-header">
+    <h2>{{ settings['clinic_name'] if settings and settings['clinic_name'] else 'Muscle Station' }}</h2>
+    <p><strong>الحالات اليومية والزيارات</strong></p>
+    {% if start_date == end_date %}
+    <p>التاريخ: {{ start_date }}</p>
+    {% else %}
+    <p>الفترة: من {{ start_date }} إلى {{ end_date }}</p>
+    {% endif %}
+    <hr style="border-top: 2px solid #0f172a; margin-top: 15px;">
+</div>
+
+<!-- Page Header -->
+<div class="page-header no-print">
+    <div>
+        <h1 class="page-title"><i class="fas fa-file-medical-alt"></i> الحالات اليومية</h1>
+        {% if start_date == end_date %}
+        <p class="page-subtitle">عرض زيارات المرضى ليوم {{ start_date }}</p>
+        {% else %}
+        <p class="page-subtitle">عرض زيارات المرضى من {{ start_date }} إلى {{ end_date }}</p>
+        {% endif %}
+    </div>
+    <div class="d-flex gap-2">
+        <a href="/export/daily_cases?start_date={{ start_date }}&end_date={{ end_date }}&payment_filter={{ payment_filter }}" class="btn btn-success btn-sm d-flex align-items-center gap-2">
+            <i class="fas fa-file-excel"></i> تصدير Excel/CSV
+        </a>
+        <button onclick="window.print()" class="btn btn-outline-light btn-sm d-flex align-items-center gap-2">
+            <i class="fas fa-print"></i> طباعة الحالات
+        </button>
+    </div>
+</div>
+
+<!-- Date Navigation Bar -->
+<div class="date-bar">
+    <form method="GET" action="/daily_cases" class="d-flex align-items-center gap-2 flex-grow-1 flex-wrap">
+        <label class="form-label mb-0 ms-2 fw-bold text-muted">من:</label>
+        <input type="date" name="start_date" class="form-control" value="{{ start_date }}"
+               style="max-width: 150px;" onchange="this.form.submit()">
+        
+        <label class="form-label mb-0 ms-2 fw-bold text-muted">إلى:</label>
+        <input type="date" name="end_date" class="form-control" value="{{ end_date }}"
+               style="max-width: 150px;" onchange="this.form.submit()">
+        
+        <input type="hidden" name="payment_filter" value="{{ payment_filter }}">
+        <button type="submit" class="btn btn-sm btn-info me-2 text-white"><i class="fas fa-search"></i> بحث</button>
+    </form>
+    
+    <a href="/daily_cases" class="today-badge text-decoration-none">
+        <i class="fas fa-calendar-day"></i> اليوم
+    </a>
+
+    <a onclick="var d=new Date();var y=d.getFullYear();var m=d.getMonth()+1;window.location='/daily_cases?start_date='+y+'-'+(m<10?'0':'')+m+'-01&end_date='+y+'-'+(m<10?'0':'')+m+'-'+new Date(y,m,0).getDate();return false;" href="#" class="today-badge text-decoration-none">
+        <i class="fas fa-calendar-alt"></i> الشهر الحالي
+    </a>
+
+    <a onclick="var d=new Date();var y=d.getFullYear();var m=d.getMonth();if(m==0){y--;m=12};window.location='/daily_cases?start_date='+y+'-'+(m<10?'0':'')+m+'-01&end_date='+y+'-'+(m<10?'0':'')+m+'-'+new Date(y,m,0).getDate();return false;" href="#" class="today-badge text-decoration-none">
+        <i class="fas fa-calendar-alt"></i> الشهر الماضي
+    </a>
+
+    <!-- فلترة حالة الدفع -->
+    <form method="GET" action="/daily_cases" class="d-flex align-items-center gap-2 ms-auto">
+        <input type="hidden" name="start_date" value="{{ start_date }}">
+        <input type="hidden" name="end_date" value="{{ end_date }}">
+        <select name="payment_filter" class="form-select" style="max-width:160px;" onchange="this.form.submit()">
+            <option value="" {% if not payment_filter %}selected{% endif %}>كل الحالات</option>
+            <option value="مدفوع"     {% if payment_filter=='مدفوع'     %}selected{% endif %}>مدفوع فقط</option>
+            <option value="غير مدفوع" {% if payment_filter=='غير مدفوع' %}selected{% endif %}>غير مدفوع</option>
+
+        </select>
+    </form>
+</div>
+
+<!-- Cases List -->
+{% if visits %}
+<div class="cases-list">
+    {% for visit in visits %}
+    {% set visit_type = 'followup' if visit['visit_type'] in ('متابعة','متابعه') else ('emergency' if visit['visit_type'] == 'طارئ' else ('chronic' if visit['visit_type'] == 'مزمن' else ('new-patient' if visit['is_new_patient'] else 'normal'))) %}
+    <div class="case-card" id="case-{{ visit['id'] }}">
+        <div class="case-card-accent {{ visit_type }}"></div>
+        <div class="case-card-body">
+
+            <!-- رقم الحالة -->
+            <div class="case-number">{{ loop.index }}</div>
+
+            <!-- أفاتار -->
+            {% if visit['gender'] == 'أنثى' %}
+            <div class="case-avatar female" title="أنثى">
+                <i class="fas fa-female"></i>
+            </div>
+            {% else %}
+            <div class="case-avatar male" title="ذكر">
+                <i class="fas fa-male"></i>
+            </div>
+            {% endif %}
+
+            <!-- المعلومات الرئيسية -->
+            <div class="case-info">
+                <div class="case-name">{{ visit['patient_name'] }}
+                    {% if visit['patient_code'] %}<span class="d-inline-flex align-items-center gap-0 ms-1" style="background:linear-gradient(135deg,rgba(139,92,246,0.1),rgba(99,102,241,0.06));border:1px solid rgba(139,92,246,0.3);border-radius:8px;font-size:0.85rem;font-weight:700;overflow:hidden;vertical-align:middle;box-shadow:0 1px 4px rgba(0,0,0,0.12);"><span style="background:linear-gradient(135deg,#7c3aed,#6366f1);color:#fff;padding:2px 8px;font-size:0.65rem;font-weight:800;border-radius:7px 0 0 7px;letter-spacing:0.5px;">ID</span><span style="padding:2px 9px;color:#a78bfa;">{{ visit['patient_code'] }}</span></span>{% endif %}
+                </div>
+                <div class="case-meta">
+                    <span><i class="fas fa-phone"></i> {{ visit['phone'] }}{% if visit['phone2'] %} <i class="fas fa-mobile-alt" style="opacity:0.5;"></i> {{ visit['phone2'] }}{% endif %}</span>
+                    {% if visit['age'] %}
+                    <span><i class="fas fa-birthday-cake"></i> {{ visit['age'] }} سنة</span>
+                    {% endif %}
+                    <span><i class="fas fa-clock"></i> {{ visit['session_time']|to12h if visit['session_time'] else (visit['created_at'][11:16] if visit['created_at'] else '--') }}</span>
+                    {% if visit['payment_method'] %}
+                    <span><i class="fas fa-wallet"></i> {{ visit['payment_method'] }}</span>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- نوع الزيارة -->
+            <span class="type-badge {{ visit_type }}">
+                {{ visit['visit_type'] if visit['visit_type'] else 'جلسه علاج طبيعي' }}
+            </span>
+            {% if visit['session_count'] and visit['session_count']|int > 1 %}
+            <span style="font-size:0.72rem;color:#f59e0b;background:rgba(245,158,11,0.1);padding:3px 10px;border-radius:6px;white-space:nowrap;"><i class="fas fa-sort-numeric-up"></i> {{ visit['session_count'] }}</span>
+            {% endif %}
+            {% if visit['session_days'] %}
+            <span style="font-size:0.72rem;color:#a78bfa;background:rgba(167,139,250,0.1);padding:3px 10px;border-radius:6px;white-space:nowrap;"><i class="fas fa-calendar-week"></i> {{ visit['session_days'] }}</span>
+            {% endif %}
+
+            <!-- التكلفة والمدفوع والمتبقي -->
+            <div class="cost-section">
+                <div class="case-cost">
+                    {{ visit['cost'] | int }}
+                    <small style="font-size:0.7rem; font-weight:600; color: rgba(203,213,225,0.65);">{{ settings['currency'] if settings else 'ج.م' }}</small>
+                </div>
+                {% if visit['paid_amount'] is not none and visit['paid_amount'] != visit['cost'] %}
+                <div class="cost-detail paid">
+                    <i class="fas fa-check-circle" style="font-size:0.65rem;"></i> مدفوع: {{ visit['paid_amount'] | int }}
+                </div>
+                <div class="cost-detail remaining">
+                    <i class="fas fa-hourglass-half" style="font-size:0.65rem;"></i> متبقي: {{ visit['remaining_amount'] | int }}
+                </div>
+                {% else %}
+                <span class="pay-badge {% if visit['payment_status'] == 'مدفوع' %}paid{% else %}unpaid{% endif %}">
+                    {{ visit['payment_status'] }}
+                </span>
+                {% endif %}
+            </div>
+
+            <!-- الأزرار -->
+            <div class="case-actions">
+                <button class="action-btn purple-btn" title="إضافة روشتة"
+                        data-bs-toggle="modal" data-bs-target="#prescriptionModal{{ visit['id'] }}">
+                    <i class="fas fa-prescription"></i>
+                </button>
+                <a href="/patient/{{ visit['patient_id'] }}" class="action-btn blue-btn" title="ملف المريض">
+                    <i class="fas fa-user"></i>
+                </a>
+                <button class="action-btn green-btn" title="تعديل الزيارة"
+                        onclick="openEditModalFromData(this)"
+                        data-visit-id="{{ visit['id'] }}"
+                        data-patient-id="{{ visit['patient_id'] }}"
+                        data-cost="{{ visit['cost'] }}"
+                        data-payment-status="{{ visit['payment_status'] }}"
+                        data-payment-method="{{ visit['payment_method'] }}"
+                        data-visit-type="{{ visit['visit_type']|default('', true) }}"
+                        data-paid-amount="{{ visit['paid_amount'] if visit['paid_amount'] is not none else 0 }}"
+                        data-session-count="{{ visit['session_count'] if visit['session_count'] is not none else 1 }}"
+                        data-session-days="{{ visit['session_days']|default('', true) }}"
+                        data-session-time="{{ visit['session_time']|default('', true) }}"
+                        data-visit-date="{{ visit['visit_date'] }}">
+                    <i class="fas fa-edit"></i>
+                </button>
+                <a href="/delete_visit/{{ visit['id'] }}" class="action-btn red-btn" title="حذف الزيارة"
+                   onclick="return confirm('هل تريد حذف هذه الزيارة؟')">
+                    <i class="fas fa-trash"></i>
+                </a>
+            </div>
+        </div>
+
+        <!-- التشخيص إن وُجد -->
+        {% if visit['diagnosis'] or visit['symptoms'] %}
+        <div class="case-diagnosis">
+            {% if visit['diagnosis'] %}
+            <div class="diagnosis-text">
+                <i class="fas fa-diagnoses" style="color: var(--accent-green); margin-left: 6px;"></i>
+                <strong>التشخيص:</strong> {{ visit['diagnosis'] }}
+                {% if visit['symptoms'] %}
+                &nbsp;|&nbsp; <strong>الأعراض:</strong> {{ visit['symptoms'] }}
+                {% endif %}
+            </div>
+            {% elif visit['symptoms'] %}
+            <div class="diagnosis-text">
+                <i class="fas fa-notes-medical" style="color: var(--accent-orange); margin-left: 6px;"></i>
+                <strong>الأعراض:</strong> {{ visit['symptoms'] }}
+            </div>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Modal: إضافة روشتة للزيارة -->
+    <div class="modal fade" id="prescriptionModal{{ visit['id'] }}" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 style="color: var(--accent-purple);"><i class="fas fa-prescription"></i> إضافة روشتة - {{ visit['visit_date'] }}</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <form action="/add_prescription" method="POST">
+                    <input type="hidden" name="visit_id" value="{{ visit['id'] }}">
+                    <input type="hidden" name="patient_id" value="{{ visit['patient_id'] }}">
+                    <div class="modal-body">
+                        <div id="medsContainer{{ visit['id'] }}">
+                            <div class="med-row mb-3" style="border:1px solid rgba(148,163,184,0.1);border-radius:10px;padding:12px;background:rgba(255,255,255,0.02);">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <span style="color:var(--accent-purple);font-weight:700;font-size:0.85rem;"><i class="fas fa-capsules"></i> الدواء 1</span>
+                                    <button type="button" class="btn btn-sm" style="background:rgba(239,68,68,0.1);color:#f87171;border:none;font-size:0.75rem;display:none;" onclick="this.closest('.med-row').remove();renumberMeds('{{ visit['id'] }}');">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                </div>
+                                <div class="row g-2">
+                                    <div class="col-12">
+                                        <label class="form-label" style="font-size:0.78rem;">اسم الدواء *</label>
+                                        <input type="text" name="medication_name" class="form-control" required style="font-size:0.85rem;">
+                                    </div>
+                                    <div class="col-4">
+                                        <label class="form-label" style="font-size:0.78rem;">الجرعة</label>
+                                        <input type="text" name="dosage" class="form-control" placeholder="500 مجم" style="font-size:0.85rem;">
+                                    </div>
+                                    <div class="col-4">
+                                        <label class="form-label" style="font-size:0.78rem;">التكرار</label>
+                                        <input type="text" name="frequency" class="form-control" placeholder="3 مرات يومياً" style="font-size:0.85rem;">
+                                    </div>
+                                    <div class="col-4">
+                                        <label class="form-label" style="font-size:0.78rem;">المدة</label>
+                                        <input type="text" name="duration" class="form-control" placeholder="7 أيام" style="font-size:0.85rem;">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <button type="button" class="btn btn-sm w-100 mb-3" style="background:rgba(139,92,246,0.1);color:#a78bfa;border:1px dashed rgba(139,92,246,0.3);border-radius:8px;font-size:0.82rem;" onclick="addMedRow('{{ visit['id'] }}')">
+                            <i class="fas fa-plus"></i> إضافة دواء آخر
+                        </button>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                        <button type="submit" class="btn" style="background: var(--accent-purple); color: white;">
+                            <i class="fas fa-save"></i> حفظ الروشتة
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+{% else %}
+<div class="empty-state">
+    <div class="empty-icon"><i class="fas fa-file-medical-alt"></i></div>
+    <h5 style="color: var(--text-main); font-weight: 700;">لا توجد حالات لهذا اليوم</h5>
+    <p>يمكنك تغيير التاريخ للبحث في أيام أخرى</p>
+</div>
+{% endif %}
+
+
+<!-- ===== Modal: إضافة حالة جديدة ===== -->
+<div class="modal fade" id="addVisitModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content" style="border-radius:16px;overflow:hidden;">
+            <div class="modal-header">
+                <h5 style="color: var(--accent-green); margin: 0;">
+                    <i class="fas fa-stethoscope"></i> تسجيل حالة جديدة
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form action="/add_visit" method="POST">
+                <input type="hidden" name="visit_date" value="{{ date_filter }}">
+                <div class="modal-body">
+                    <div class="row g-3">
+                        <div class="col-md-12">
+                            <label class="form-label"><i class="fas fa-user"></i> المريض *</label>
+                            <select name="patient_id" class="form-select" required id="patientSelect" onchange="onPatientChange()">
+                                <option value="">اختر المريض...</option>
+                                {% for p in patients %}
+                                <option value="{{ p['id'] }}">{{ p['name'] }}{% if p['patient_code'] %} [{{ p['patient_code'] }}]{% endif %} — {{ p['phone'] }}{% if p['phone2'] %} / {{ p['phone2'] }}{% endif %}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label"><i class="fas fa-list-alt text-info"></i> نوع الجلسة</label>
+                            <select name="visit_type" class="form-select" id="addVisitType" onchange="onVisitTypeChange(this)">
+                                <option value="جلسه علاج طبيعي">جلسه علاج طبيعي</option>
+                                <option value="جلسه تأهيل">جلسه تأهيل</option>
+                                <option value="حجامه جافه">حجامه جافه</option>
+                                <option value="حجامه دموية">حجامه دموية</option>
+                                <option value="جلسه علاج طبيعي خاص">جلسه علاج طبيعي خاص</option>
+                                <option value="الباقات">الباقات</option>
+                                <option value="متابعه">متابعه</option>
+                                <option value="التغذية">التغذية</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4" id="addSessionField" style="display:none">
+                            <label class="form-label"><i class="fas fa-sort-numeric-up text-primary"></i> عدد الجلسات</label>
+                            <input type="number" name="session_count" class="form-control" placeholder="1" min="1" value="1" disabled>
+                        </div>
+                        <div class="col-md-4" id="addPackageCountField" style="display:none">
+                            <label class="form-label"><i class="fas fa-box text-info"></i> عدد جلسات الباقة</label>
+                            <input type="text" class="form-control" id="addPkgCountDisplay" readonly>
+                        </div>
+                        <div class="col-md-4" id="addSessionNumField" style="display:none">
+                            <label class="form-label"><i class="fas fa-hashtag text-warning"></i> رقم الجلسة</label>
+                            <input type="text" name="session_count" id="addSessionNumInput" class="form-control" readonly disabled>
+                        </div>
+                        <div class="col-md-4" id="addCostField">
+                            <label class="form-label"><i class="fas fa-tag text-warning"></i> التكلفة</label>
+                            <input type="number" name="cost" id="addCost" class="form-control"
+                                   value="{{ settings['visit_cost_default'] if settings else '' }}" min="0" oninput="calcAddRem()">
+                        </div>
+                    </div>
+                    <div class="row g-3 mt-3" id="addFinanceFieldsRow">
+                        <div class="col-md-4 finance-field">
+                            <label class="form-label"><i class="fas fa-money-bill-wave text-success"></i> المدفوع</label>
+                            <input type="number" name="paid_amount" id="addPaid" class="form-control" placeholder="0" min="0" step="1" oninput="calcAddRem()">
+                        </div>
+                        <div class="col-md-4 finance-field">
+                            <label class="form-label"><i class="fas fa-hourglass-half text-danger"></i> المتبقي</label>
+                            <input type="number" id="addRem" class="form-control" placeholder="0" readonly
+                                   style="background:rgba(239,68,68,0.08);border-color:rgba(239,68,68,0.3);color:var(--accent-red);font-weight:700;">
+                        </div>
+                        <div class="col-md-4 finance-field">
+                            <label class="form-label"><i class="fas fa-wallet text-primary"></i> طريقة الدفع</label>
+                            <select name="payment_method" class="form-select">
+                                <option value="نقدي">نقدي</option>
+                                <option value="فيزا">فيزا</option>
+                                <option value="فودافون كاش">فودافون كاش</option>
+                                <option value="انستاباي">انستاباي</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="row g-3 mt-3">
+                        <div class="col-md-12" id="addDaysField" style="display:none">
+                            <label class="form-label"><i class="fas fa-calendar-week text-info"></i> أيام الجلسة</label>
+                            <div class="d-flex gap-2 flex-wrap">
+                                {% set days = ['السبت','الأحد','الإثنين','الثلاثاء','الأربعاء','الخميس','الجمعه'] %}
+                                {% for d in days %}
+                                <label class="day-checkbox">
+                                    <input type="checkbox" name="session_days" value="{{ d }}">
+                                    <span>{{ d }}</span>
+                                </label>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        <div class="col-md-12">
+                            <label class="form-label"><i class="fas fa-search"></i> الفحص السريري</label>
+                            <textarea name="examination" class="form-control" rows="2" placeholder="نتائج الفحص..."></textarea>
+                        </div>
+                        <div class="col-md-12">
+                            <label class="form-label"><i class="fas fa-sticky-note"></i> ملاحظات</label>
+                            <input type="text" name="notes" class="form-control" placeholder="أي ملاحظات إضافية...">
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer gap-2">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                    <button type="submit" class="btn btn-success">
+                        <i class="fas fa-save"></i> حفظ الحالة
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+
+<!-- ===== Modal: تعديل الزيارة ===== -->
+<div class="modal fade" id="editVisitModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content" style="border-radius:16px;overflow:hidden;">
+            <div class="modal-header">
+                <h5 style="color: var(--accent-orange); margin: 0;">
+                    <i class="fas fa-edit"></i> تعديل الزيارة
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="editVisitForm" method="POST">
+                <input type="hidden" name="patient_id" id="edit_patient_id">
+                <input type="hidden" name="visit_date" id="edit_visit_date" value="{{ date_filter }}">
+                <div class="modal-body">
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label class="form-label"><i class="fas fa-list-alt text-info"></i> نوع الجلسة</label>
+                            <select name="visit_type" id="edit_visit_type" class="form-select" onchange="onEditVisitTypeChange(this)">
+                                <option value="جلسه علاج طبيعي">جلسه علاج طبيعي</option>
+                                <option value="جلسه تأهيل">جلسه تأهيل</option>
+                                <option value="حجامه جافه">حجامه جافه</option>
+                                <option value="حجامه دموية">حجامه دموية</option>
+                                <option value="جلسه علاج طبيعي خاص">جلسه علاج طبيعي خاص</option>
+                                <option value="الباقات">الباقات</option>
+                                <option value="متابعه">متابعه</option>
+                                <option value="التغذية">التغذية</option>
+                            </select>
+                        </div>
+                        <div class="col-md-4" id="editCostField">
+                            <label class="form-label"><i class="fas fa-tag text-warning"></i> التكلفة</label>
+                            <input type="number" name="cost" id="edit_cost" class="form-control" min="0" oninput="calcEditRem()">
+                        </div>
+                    </div>
+                    <div class="row g-3 mt-1">
+                        <div class="col-md-4" id="editSessionField" style="display:none">
+                            <label class="form-label"><i class="fas fa-sort-numeric-up text-primary"></i> عدد الجلسات</label>
+                            <input type="number" name="session_count" id="edit_session_count" class="form-control" min="1" value="1" disabled>
+                        </div>
+                        <div class="col-md-4" id="editTimeField" style="display:none">
+                            <label class="form-label"><i class="fas fa-clock text-warning"></i> ميعاد الجلسة</label>
+                            <div style="display:flex;align-items:center;gap:4px;direction:ltr;">
+                                <select name="session_hour" class="form-select" disabled onchange="combineEditTime()" style="flex:1;height:44px;font-size:0.95rem;background:rgba(30,41,59,0.8);border:1px solid rgba(148,163,184,0.15);border-radius:10px;color:#e2e8f0;text-align:center;cursor:pointer;">
+                                    <option value="12">12</option>
+                                    <option value="13">1</option>
+                                    <option value="14">2</option>
+                                    <option value="15">3</option>
+                                    <option value="16">4</option>
+                                    <option value="17">5</option>
+                                    <option value="18">6</option>
+                                    <option value="19">7</option>
+                                    <option value="20">8</option>
+                                    <option value="21">9</option>
+                                    <option value="22">10</option>
+                                    <option value="23">11</option>
+                                </select>
+                                <span style="color:#64748b;font-weight:700;font-size:1.1rem;">:</span>
+                                <select name="session_minute" class="form-select" disabled onchange="combineEditTime()" style="flex:1;height:44px;font-size:0.95rem;background:rgba(30,41,59,0.8);border:1px solid rgba(148,163,184,0.15);border-radius:10px;color:#e2e8f0;text-align:center;cursor:pointer;">
+                                    <option value="00">00</option>
+                                    <option value="30">30</option>
+                                </select>
+                                <input type="hidden" name="session_time" id="editSessionTime">
+                            </div>
+                        </div>
+                        <div class="col-md-4" id="editPackageCountField" style="display:none">
+                            <label class="form-label"><i class="fas fa-box text-info"></i> عدد جلسات الباقة</label>
+                            <input type="text" class="form-control" id="editPkgCountDisplay" readonly>
+                        </div>
+                        <div class="col-md-4" id="editSessionNumField" style="display:none">
+                            <label class="form-label"><i class="fas fa-hashtag text-warning"></i> رقم الجلسة</label>
+                            <input type="text" name="session_count" id="editSessionNumInput" class="form-control" readonly disabled>
+                        </div>
+                    </div>
+                    <div class="row g-3 mt-3" id="editFinanceFieldsRow">
+                        <div class="col-md-4 finance-field">
+                            <label class="form-label"><i class="fas fa-money-bill-wave text-success"></i> المدفوع</label>
+                            <input type="number" name="paid_amount" id="edit_paid" class="form-control" placeholder="0" min="0" step="1" oninput="calcEditRem()">
+                        </div>
+                        <div class="col-md-4 finance-field">
+                            <label class="form-label"><i class="fas fa-hourglass-half text-danger"></i> المتبقي</label>
+                            <input type="number" id="edit_rem" class="form-control" placeholder="0" readonly
+                                   style="background:rgba(239,68,68,0.08);border-color:rgba(239,68,68,0.3);color:var(--accent-red);font-weight:700;">
+                        </div>
+                        <div class="col-md-4 finance-field">
+                            <label class="form-label"><i class="fas fa-wallet text-primary"></i> طريقة الدفع</label>
+                            <select name="payment_method" id="edit_payment_method" class="form-select">
+                                <option value="نقدي">نقدي</option>
+                                <option value="فيزا">فيزا</option>
+                                <option value="فودافون كاش">فودافون كاش</option>
+                                <option value="انستاباي">انستاباي</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="row g-3 mt-3">
+                        <div class="col-md-12" id="editDaysField" style="display:none">
+                            <label class="form-label"><i class="fas fa-calendar-week text-info"></i> أيام الجلسة</label>
+                            <div class="d-flex gap-2 flex-wrap">
+                                {% set days = ['السبت','الأحد','الإثنين','الثلاثاء','الأربعاء','الخميس','الجمعه'] %}
+                                {% for d in days %}
+                                <label class="day-checkbox">
+                                    <input type="checkbox" name="session_days" value="{{ d }}">
+                                    <span>{{ d }}</span>
+                                </label>
+                                {% endfor %}
+                            </div>
+                    </div>
+                </div>
+                <div class="modal-footer" style="border-top:1px solid rgba(255,255,255,0.08);">
+                    <button type="submit" class="btn w-100" style="background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;border:none;border-radius:10px;padding:12px;font-weight:800;font-size:0.95rem;">
+                        <i class="fas fa-save"></i> حفظ التعديلات
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+function addMedRow(vid) {
+    var container = document.getElementById('medsContainer' + vid);
+    if (!container) return;
+    var rows = container.querySelectorAll('.med-row');
+    if (!rows.length) return;
+    var count = rows.length + 1;
+    var row = rows[0].cloneNode(true);
+    row.querySelectorAll('input, textarea').forEach(function(el) { el.value = ''; });
+    var span = row.querySelector('.d-flex span');
+    if (span) span.innerHTML = '<i class="fas fa-capsules"></i> \u0627\u0644\u062f\u0648\u0627\u0621 ' + count;
+    var btn = row.querySelector('.d-flex button');
+    if (btn) btn.style.display = 'inline-block';
+    container.appendChild(row);
+}
+function renumberMeds(vid) {
+    var container = document.getElementById('medsContainer' + vid);
+    if (!container) return;
+    container.querySelectorAll('.med-row .d-flex span').forEach(function(el, i) {
+        el.innerHTML = '<i class="fas fa-capsules"></i> \u0627\u0644\u062f\u0648\u0627\u0621 ' + (i + 1);
+    });
+}
+var followUpCounts = {{ follow_up_counts | tojson }};
+var packageSessionCounts = {{ package_session_counts | tojson }};
+
+function onPatientChange() {
+    var vt = document.getElementById('addVisitType');
+    if (vt) onVisitTypeChange(vt);
+}
+
+function calcAddRem() {
+    var cost = parseFloat(document.getElementById('addCost').value) || 0;
+    var paid = parseFloat(document.getElementById('addPaid').value) || 0;
+    if (paid > cost) { document.getElementById('addPaid').value = cost; paid = cost; }
+    var rem = cost - paid;
+    var el = document.getElementById('addRem');
+    el.value = rem >= 0 ? Math.round(rem) : '0';
+    el.style.color = rem > 0 ? 'var(--accent-red)' : 'var(--accent-green)';
+    el.style.borderColor = rem > 0 ? 'rgba(239,68,68,0.4)' : 'rgba(16,185,129,0.4)';
+}
+
+function calcEditRem() {
+    var cost = parseFloat(document.getElementById('edit_cost').value) || 0;
+    var paid = parseFloat(document.getElementById('edit_paid').value) || 0;
+    if (paid > cost) { document.getElementById('edit_paid').value = cost; paid = cost; }
+    var rem = cost - paid;
+    var el = document.getElementById('edit_rem');
+    el.value = rem >= 0 ? Math.round(rem) : '0';
+    el.style.color = rem > 0 ? 'var(--accent-red)' : 'var(--accent-green)';
+    el.style.borderColor = rem > 0 ? 'rgba(239,68,68,0.4)' : 'rgba(16,185,129,0.4)';
+}
+
+function combineEditTime() {
+    var hourEl = document.querySelector('#editVisitModal select[name="session_hour"]');
+    var minEl = document.querySelector('#editVisitModal select[name="session_minute"]');
+    var hiddenEl = document.getElementById('editSessionTime');
+    if (hiddenEl) {
+        var h = hourEl ? hourEl.value : '';
+        var m = minEl ? minEl.value : '00';
+        hiddenEl.value = h ? h + ':' + m : '';
+    }
+}
+
+function openEditModalFromData(btn) {
+    const ds = btn.dataset;
+    openEditModal(
+        ds.visitId,
+        ds.patientId,
+        ds.cost,
+        ds.paymentStatus,
+        ds.paymentMethod,
+        ds.visitType,
+        ds.paidAmount || 0,
+        ds.sessionCount || 1,
+        ds.sessionDays || '',
+        ds.sessionTime || '',
+        ds.visitDate
+    );
+}
+
+function openEditModal(visitId, patientId, cost, payStatus, payMethod, visitType, paidAmount, sessionCount, sessionDays, sessionTime, visitDate) {
+    document.getElementById('editVisitForm').action = '/edit_visit/' + visitId;
+    document.getElementById('edit_patient_id').value = patientId;
+    document.getElementById('edit_cost').value = cost;
+    document.getElementById('edit_paid').value = paidAmount || 0;
+    document.getElementById('edit_session_count').value = sessionCount || 1;
+    if (visitDate) document.getElementById('edit_visit_date').value = visitDate;
+
+    const pm = document.getElementById('edit_payment_method');
+    for (let o of pm.options) { if (o.value === payMethod) { o.selected = true; break; } }
+
+    const vt = document.getElementById('edit_visit_type');
+    for (let o of vt.options) { if (o.value === visitType) { o.selected = true; break; } }
+
+    // Pre-check session days
+    var dayChecks = document.querySelectorAll('#editVisitModal .day-checkbox input');
+    var daysArr = sessionDays ? sessionDays.split(',') : [];
+    dayChecks.forEach(function(cb) { cb.checked = daysArr.indexOf(cb.value) !== -1; });
+
+    // Set session time
+    var editTimeField = document.getElementById('editTimeField');
+    var hourEl = editTimeField ? editTimeField.querySelector('select[name="session_hour"]') : null;
+    var minEl = editTimeField ? editTimeField.querySelector('select[name="session_minute"]') : null;
+    if (sessionTime && hourEl && minEl) {
+        var parts = sessionTime.split(':');
+        if (parts.length >= 2) {
+            hourEl.value = parts[0];
+            minEl.value = parts[1];
+        }
+    } else {
+        if (hourEl) hourEl.value = '';
+        if (minEl) minEl.value = '00';
+    }
+    var hiddenTime = document.getElementById('editSessionTime');
+    if (hiddenTime) hiddenTime.value = sessionTime || '';
+    combineEditTime();
+
+    // Fields visibility
+    var sessionField = document.getElementById('editSessionField');
+    var daysField = document.getElementById('editDaysField');
+    var timeField = document.getElementById('editTimeField');
+    var costField = document.getElementById('editCostField');
+    var pkgCountField = document.getElementById('editPackageCountField');
+    var sessionNumField = document.getElementById('editSessionNumField');
+    var financeRow = document.getElementById('editFinanceFieldsRow');
+    var sessionInput = sessionField ? sessionField.querySelector('input') : null;
+    var sessionNumInput = sessionNumField ? sessionNumField.querySelector('input') : null;
+    if (visitType === 'متابعه') {
+        if (sessionField) sessionField.style.display = 'none';
+        if (sessionInput) sessionInput.disabled = true;
+        if (pkgCountField) pkgCountField.style.display = '';
+        if (sessionNumField) sessionNumField.style.display = '';
+        if (sessionNumInput) {
+            sessionNumInput.disabled = false;
+            sessionNumInput.value = 'جلسة ' + (sessionCount || 1);
+        }
+        if (costField) costField.style.display = 'none';
+        if (daysField) daysField.style.display = 'none';
+        if (timeField) { timeField.style.display = 'none'; timeField.querySelectorAll('select').forEach(function(s){s.disabled=true;}); }
+        if (financeRow) financeRow.style.display = 'none';
+        var count = followUpCounts[patientId] || 0;
+        var pkg = packageSessionCounts[patientId] || 0;
+        var pc = document.getElementById('editPkgCountDisplay');
+        if (pc) pc.value = pkg;
+    } else if (visitType === 'الباقات') {
+        if (sessionField) {
+            sessionField.style.display = '';
+            if (sessionInput) { sessionInput.readOnly = false; sessionInput.disabled = false; }
+        }
+        if (pkgCountField) pkgCountField.style.display = 'none';
+        if (sessionNumField) sessionNumField.style.display = 'none';
+        if (sessionNumInput) sessionNumInput.disabled = true;
+        if (costField) costField.style.display = '';
+        if (daysField) daysField.style.display = '';
+        if (timeField) { timeField.style.display = ''; timeField.querySelectorAll('select').forEach(function(s){s.disabled=false;}); }
+        if (financeRow) financeRow.style.display = '';
+    } else if (visitType === 'جلسه تأهيل') {
+        if (sessionField) {
+            sessionField.style.display = '';
+            if (sessionInput) { sessionInput.readOnly = false; sessionInput.disabled = false; }
+        }
+        if (pkgCountField) pkgCountField.style.display = 'none';
+        if (sessionNumField) sessionNumField.style.display = 'none';
+        if (sessionNumInput) sessionNumInput.disabled = true;
+        if (costField) costField.style.display = '';
+        if (daysField) daysField.style.display = '';
+        if (timeField) { timeField.style.display = ''; timeField.querySelectorAll('select').forEach(function(s){s.disabled=false;}); }
+        if (financeRow) financeRow.style.display = '';
+    } else {
+        if (sessionField) sessionField.style.display = 'none';
+        if (sessionInput) sessionInput.disabled = true;
+        if (pkgCountField) pkgCountField.style.display = 'none';
+        if (sessionNumField) sessionNumField.style.display = 'none';
+        if (sessionNumInput) sessionNumInput.disabled = true;
+        if (costField) costField.style.display = '';
+        if (daysField) daysField.style.display = 'none';
+        if (timeField) { timeField.style.display = 'none'; timeField.querySelectorAll('select').forEach(function(s){s.disabled=true;}); }
+        if (financeRow) financeRow.style.display = '';
+    }
+
+    calcEditRem();
+    new bootstrap.Modal(document.getElementById('editVisitModal')).show();
+}
+
+function onVisitTypeChange(selectEl) {
+    var sessionField = document.getElementById('addSessionField');
+    var daysField = document.getElementById('addDaysField');
+    var costField = document.getElementById('addCostField');
+    var pkgCountField = document.getElementById('addPackageCountField');
+    var sessionNumField = document.getElementById('addSessionNumField');
+    var financeRow = document.getElementById('addFinanceFieldsRow');
+    var pid = document.getElementById('patientSelect');
+    var costInput = document.getElementById('addCost');
+    var sessionInput = sessionField ? sessionField.querySelector('input') : null;
+    var sessionNumInput = sessionNumField ? sessionNumField.querySelector('input') : null;
+    if (selectEl.value === 'متابعه') {
+        if (sessionField) sessionField.style.display = 'none';
+        if (sessionInput) sessionInput.disabled = true;
+        if (pkgCountField) pkgCountField.style.display = '';
+        if (sessionNumField) sessionNumField.style.display = '';
+        if (sessionNumInput) sessionNumInput.disabled = false;
+        if (costField) costField.style.display = 'none';
+        if (costInput) { costInput.required = false; costInput.value = 0; }
+        if (daysField) daysField.style.display = 'none';
+        if (financeRow) financeRow.style.display = 'none';
+        var paidField = document.getElementById('addPaid');
+        if (paidField) paidField.value = 0;
+        if (pid) {
+            var count = followUpCounts[pid.value] || 0;
+            var pkg = packageSessionCounts[pid.value] || 0;
+            var sn = document.getElementById('addSessionNumInput');
+            if (sn) sn.value = 'جلسة ' + (count + 1);
+            var pc = document.getElementById('addPkgCountDisplay');
+            if (pc) pc.value = pkg;
+        }
+    } else if (selectEl.value === 'الباقات') {
+        if (sessionField) {
+            sessionField.style.display = '';
+            if (sessionInput) { sessionInput.readOnly = false; sessionInput.disabled = false; }
+        }
+        if (pkgCountField) pkgCountField.style.display = 'none';
+        if (sessionNumField) sessionNumField.style.display = 'none';
+        if (sessionNumInput) sessionNumInput.disabled = true;
+        if (costField) costField.style.display = '';
+        if (costInput) costInput.required = true;
+        if (daysField) daysField.style.display = '';
+        if (financeRow) financeRow.style.display = '';
+    } else if (selectEl.value === 'جلسه تأهيل') {
+        if (sessionField) sessionField.style.display = 'none';
+        if (sessionInput) sessionInput.disabled = true;
+        if (pkgCountField) pkgCountField.style.display = 'none';
+        if (sessionNumField) sessionNumField.style.display = 'none';
+        if (sessionNumInput) sessionNumInput.disabled = true;
+        if (costField) costField.style.display = '';
+        if (costInput) costInput.required = true;
+        if (daysField) daysField.style.display = '';
+        if (financeRow) financeRow.style.display = '';
+    } else {
+        if (sessionField) sessionField.style.display = 'none';
+        if (sessionInput) sessionInput.disabled = true;
+        if (pkgCountField) pkgCountField.style.display = 'none';
+        if (sessionNumField) sessionNumField.style.display = 'none';
+        if (sessionNumInput) sessionNumInput.disabled = true;
+        if (costField) costField.style.display = '';
+        if (costInput) costInput.required = true;
+        if (daysField) daysField.style.display = 'none';
+        if (financeRow) financeRow.style.display = '';
+    }
+}
+
+function onEditVisitTypeChange(selectEl) {
+    var sessionField = document.getElementById('editSessionField');
+    var daysField = document.getElementById('editDaysField');
+    var timeField = document.getElementById('editTimeField');
+    var costField = document.getElementById('editCostField');
+    var pkgCountField = document.getElementById('editPackageCountField');
+    var sessionNumField = document.getElementById('editSessionNumField');
+    var financeRow = document.getElementById('editFinanceFieldsRow');
+    var pid = document.getElementById('edit_patient_id');
+    var costInput = document.getElementById('edit_cost');
+    var sessionInput = sessionField ? sessionField.querySelector('input') : null;
+    var sessionNumInput = sessionNumField ? sessionNumField.querySelector('input') : null;
+    if (selectEl.value === 'متابعه') {
+        if (sessionField) sessionField.style.display = 'none';
+        if (sessionInput) sessionInput.disabled = true;
+        if (pkgCountField) pkgCountField.style.display = '';
+        if (sessionNumField) sessionNumField.style.display = '';
+        if (sessionNumInput) sessionNumInput.disabled = false;
+        if (costField) costField.style.display = 'none';
+        if (costInput) { costInput.required = false; costInput.value = 0; }
+        if (daysField) daysField.style.display = 'none';
+        if (timeField) { timeField.style.display = 'none'; timeField.querySelectorAll('select').forEach(function(s){s.disabled=true;}); }
+        if (financeRow) financeRow.style.display = 'none';
+        if (pid) {
+            var count = followUpCounts[pid.value] || 0;
+            var pkg = packageSessionCounts[pid.value] || 0;
+            var sn = document.getElementById('editSessionNumInput');
+            if (sn) sn.value = 'جلسة ' + (count + 1);
+            var pc = document.getElementById('editPkgCountDisplay');
+            if (pc) pc.value = pkg;
+        }
+    } else if (selectEl.value === 'الباقات') {
+        if (sessionField) {
+            sessionField.style.display = '';
+            if (sessionInput) { sessionInput.readOnly = false; sessionInput.disabled = false; }
+        }
+        if (pkgCountField) pkgCountField.style.display = 'none';
+        if (sessionNumField) sessionNumField.style.display = 'none';
+        if (sessionNumInput) sessionNumInput.disabled = true;
+        if (costField) costField.style.display = '';
+        if (costInput) costInput.required = true;
+        if (daysField) daysField.style.display = '';
+        if (timeField) { timeField.style.display = ''; timeField.querySelectorAll('select').forEach(function(s){s.disabled=false;}); }
+        if (financeRow) financeRow.style.display = '';
+    } else if (selectEl.value === 'جلسه تأهيل') {
+        if (sessionField) {
+            sessionField.style.display = '';
+            if (sessionInput) { sessionInput.readOnly = false; sessionInput.disabled = false; }
+        }
+        if (pkgCountField) pkgCountField.style.display = 'none';
+        if (sessionNumField) sessionNumField.style.display = 'none';
+        if (sessionNumInput) sessionNumInput.disabled = true;
+        if (costField) costField.style.display = '';
+        if (costInput) costInput.required = true;
+        if (daysField) daysField.style.display = '';
+        if (timeField) { timeField.style.display = ''; timeField.querySelectorAll('select').forEach(function(s){s.disabled=false;}); }
+        if (financeRow) financeRow.style.display = '';
+    } else {
+        if (sessionField) sessionField.style.display = 'none';
+        if (sessionInput) sessionInput.disabled = true;
+        if (pkgCountField) pkgCountField.style.display = 'none';
+        if (sessionNumField) sessionNumField.style.display = 'none';
+        if (sessionNumInput) sessionNumInput.disabled = true;
+        if (costField) costField.style.display = '';
+        if (costInput) costInput.required = true;
+        if (daysField) daysField.style.display = 'none';
+        if (timeField) { timeField.style.display = 'none'; timeField.querySelectorAll('select').forEach(function(s){s.disabled=true;}); }
+        if (financeRow) financeRow.style.display = '';
+    }
+}
+</script>
+
+{% endblock %}

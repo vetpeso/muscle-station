@@ -1,0 +1,393 @@
+{% extends 'base.html' %}
+{% block title %}إعدادات النظام - نظام العيادة{% endblock %}
+
+{% block content %}
+
+<style>
+    .settings-card {
+        background: var(--card-bg);
+        border-radius: 16px;
+        border: 1px solid var(--border-color);
+        padding: 30px;
+        margin-bottom: 25px;
+    }
+
+    .settings-title {
+        font-weight: 900;
+        font-size: 1.2rem;
+        color: var(--accent-blue);
+        margin-bottom: 20px;
+        padding-bottom: 15px;
+        border-bottom: 1px solid var(--border-color);
+    }
+
+    .settings-icon {
+        width: 50px;
+        height: 50px;
+        border-radius: 14px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.3rem;
+        margin-bottom: 15px;
+    }
+
+    /* ── Responsive ── */
+    @media (max-width: 767px) {
+        .col-md-6, .col-md-4, .col-md-8 { flex: 0 0 100%; max-width: 100%; }
+        .page-header { flex-direction: column; align-items: flex-start; gap: 10px; }
+    }
+</style>
+
+<div class="page-header">
+    <div>
+        <h1 class="page-title"><i class="fas fa-cog"></i> إعدادات النظام</h1>
+        <p class="page-subtitle">تخصيص إعدادات العيادة والنظام وإدارة المستخدمين</p>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- Clinic Settings -->
+    <div class="col-lg-5">
+        <div class="settings-card">
+            <h5 class="settings-title"><i class="fas fa-hospital"></i> بيانات العيادة</h5>
+            <form method="POST" action="/settings">
+                <div class="row g-3">
+                    <div class="col-12">
+                        <label class="form-label">اسم العيادة</label>
+                        <input type="text" name="clinic_name" class="form-control" value="{{ settings['clinic_name'] if settings else 'عيادتي' }}">
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label">اسم الطبيب</label>
+                        <input type="text" name="doctor_name" class="form-control" value="{{ settings['doctor_name'] if settings else '' }}">
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label">عنوان العيادة</label>
+                        <input type="text" name="clinic_address" class="form-control" value="{{ settings['clinic_address'] if settings else '' }}">
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label">هاتف العيادة</label>
+                        <input type="text" name="clinic_phone" class="form-control" value="{{ settings['clinic_phone'] if settings else '' }}">
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label">بريد العيادة</label>
+                        <input type="email" name="clinic_email" class="form-control" value="{{ settings['clinic_email'] if settings else '' }}">
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label">العملة</label>
+                        <select name="currency" class="form-select">
+                            <option value="ج.م" {% if settings and settings['currency'] == 'ج.م' %}selected{% endif %}>جنيه مصري (ج.م)</option>
+                            <option value="$" {% if settings and settings['currency'] == '$' %}selected{% endif %}>دولار ($)</option>
+                            <option value="ر.س" {% if settings and settings['currency'] == 'ر.س' %}selected{% endif %}>ريال سعودي (ر.س)</option>
+                            <option value="د.إ" {% if settings and settings['currency'] == 'د.إ' %}selected{% endif %}>درهم إماراتي (د.إ)</option>
+                        </select>
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label">سعر الكشف الافتراضي</label>
+                        <input type="number" name="visit_cost_default" class="form-control" value="{{ settings['visit_cost_default'] if settings else 100 }}">
+                    </div>
+                </div>
+                <div class="mt-4">
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="fas fa-save"></i> حفظ الإعدادات
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <div class="settings-card">
+            <h5 class="settings-title"><i class="fas fa-info-circle"></i> معلومات النظام</h5>
+            <div class="text-muted">
+                <p><strong>الإصدار:</strong> 3.0 Professional</p>
+                <p><strong>قاعدة البيانات:</strong> SQLite</p>
+                <p><strong>الإطار:</strong> Flask</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- User Management -->
+    <div class="col-lg-7">
+        <div class="settings-card">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="settings-title mb-0" style="border-bottom: none; padding-bottom: 0;"><i class="fas fa-users-cog"></i> إدارة حسابات الموظفين</h5>
+                <button class="btn btn-sm btn-success" data-bs-toggle="modal" data-bs-target="#addUserModal">
+                    <i class="fas fa-user-plus"></i> إضافة مستخدم
+                </button>
+            </div>
+            <div class="table-responsive">
+                <table class="table align-middle">
+                    <thead>
+                        <tr>
+                            <th>الموظف</th>
+                            <th>الصلاحية</th>
+                            <th>الحالة</th>
+                            <th>العمليات</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for user in users %}
+                        <tr>
+                            <td>
+                                <div class="d-flex align-items-center gap-2">
+                                    <div class="rounded-circle d-flex align-items-center justify-content-center bg-secondary text-white" style="width: 32px; height: 32px; font-weight: 900; font-size: 0.85rem;">
+                                        {{ user['full_name'][0] if user['full_name'] else 'م' }}
+                                    </div>
+                                    <div>
+                                        <div class="fw-bold">{{ user['full_name'] or 'مستخدم جديد' }}</div>
+                                        <div class="text-muted small">@{{ user['username'] }}</div>
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                {% if user['role'] == 'admin' %}
+                                <span class="badge bg-danger">مدير النظام</span>
+                                {% elif user['role'] == 'doctor' %}
+                                <span class="badge bg-primary">طبيب {% if user['specialty'] %}({{ user['specialty'] }}){% endif %}</span>
+                                {% elif user['role'] == 'receptionist' %}
+                                <span class="badge bg-success">موظف استقبال</span>
+                                {% else %}
+                                <span class="badge bg-secondary">{{ user['role'] }}</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if user['is_active'] %}
+                                <span class="badge bg-success">نشط</span>
+                                {% else %}
+                                <span class="badge bg-secondary">معطل</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="d-flex gap-2">
+                                    <button class="btn btn-outline-primary btn-sm px-2 py-1" data-bs-toggle="modal" data-bs-target="#editUserModal{{ user['id'] }}" title="تعديل">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <a href="/settings/delete_user/{{ user['id'] }}" class="btn btn-outline-danger btn-sm px-2 py-1" title="حذف" onclick="return confirm('هل أنت متأكد من حذف هذا المستخدم نهائياً؟')">
+                                        <i class="fas fa-trash"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Backup Management Card -->
+        <div class="settings-card mt-4">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="settings-title mb-0" style="border-bottom: none; padding-bottom: 0;">
+                    <i class="fas fa-database"></i> النسخ الاحتياطي والأمان
+                </h5>
+                <a href="/settings/backup/create" class="btn btn-sm btn-primary">
+                    <i class="fas fa-sync-alt"></i> أخذ نسخة احتياطية الآن
+                </a>
+            </div>
+            
+            <!-- Backup Config Form -->
+            <form action="/settings/backup/save_config" method="POST" class="mb-4">
+                <div class="row g-3">
+                    <div class="col-md-8">
+                        <label class="form-label">مسار مجلد النسخ الاحتياطي المخصص</label>
+                        <input type="text" name="backup_dir" class="form-control" 
+                               value="{{ settings['backup_dir'] if settings and settings['backup_dir'] else '' }}" 
+                               placeholder="اتركه فارغاً للحفظ في المجلد الافتراضي (backups)">
+                        <div class="form-text text-muted small">
+                            تلميح: يمكنك إدخال مسار مجلد المزامنة لـ (Google Drive, OneDrive, Dropbox) ليتم رفع النسخ سحابياً تلقائياً.
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label d-block">خيارات التفعيل</label>
+                        <div class="form-check form-switch mt-2">
+                            <input class="form-check-input" type="checkbox" name="auto_backup_enabled" id="auto_backup_switch" value="1" 
+                                   {% if not settings or settings['auto_backup_enabled'] %}checked{% endif %}>
+                            <label class="form-check-label" for="auto_backup_switch">نسخ تلقائي يومي</label>
+                        </div>
+                    </div>
+                    <div class="col-12 text-end">
+                        <button type="submit" class="btn btn-sm btn-success px-4">
+                            <i class="fas fa-save"></i> حفظ خيارات النسخ
+                        </button>
+                    </div>
+                </div>
+            </form>
+
+            <hr class="my-4" style="border-top: 1px solid var(--border-color);">
+
+            <!-- Backups Table -->
+            <h6 class="fw-bold mb-3"><i class="fas fa-history"></i> النسخ الاحتياطية المتوفرة (آخر 15 نسخة)</h6>
+            <div class="table-responsive" style="max-height: 250px; overflow-y: auto;">
+                <table class="table align-middle table-sm">
+                    <thead>
+                        <tr>
+                            <th>اسم ملف النسخة</th>
+                            <th>تاريخ النسخ</th>
+                            <th>الحجم</th>
+                            <th class="text-center">العمليات</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% if backups %}
+                            {% for backup in backups %}
+                            <tr>
+                                <td class="small fw-semibold text-truncate" style="max-width: 180px;" title="{{ backup['filename'] }}">
+                                    {{ backup['filename'] }}
+                                </td>
+                                <td class="small">{{ backup['time'] }}</td>
+                                <td class="small"><span class="badge bg-secondary">{{ backup['size'] }}</span></td>
+                                <td class="text-center">
+                                    <div class="d-flex gap-1 justify-content-center">
+                                        <a href="/settings/backup/download/{{ backup['filename'] }}" class="btn btn-outline-info btn-xs px-2 py-0" title="تحميل">
+                                            <i class="fas fa-download"></i>
+                                        </a>
+                                        <a href="/settings/backup/delete/{{ backup['filename'] }}" class="btn btn-outline-danger btn-xs px-2 py-0" title="حذف" 
+                                           onclick="return confirm('هل أنت متأكد من حذف هذه النسخة الاحتياطية؟')">
+                                            <i class="fas fa-trash-alt"></i>
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        {% else %}
+                            <tr>
+                                <td colspan="4" class="text-center text-muted py-3">لا توجد نسخ احتياطية متوفرة حالياً.</td>
+                            </tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add User Modal -->
+<div class="modal fade" id="addUserModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 style="color: var(--accent-green);"><i class="fas fa-user-plus"></i> إضافة مستخدم جديد</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form action="/settings/add_user" method="POST">
+                <div class="modal-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label">الاسم بالكامل *</label>
+                            <input type="text" name="full_name" class="form-control" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">اسم المستخدم *</label>
+                            <input type="text" name="username" class="form-control" required placeholder="مثال: mohamed_reception">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">كلمة المرور *</label>
+                            <input type="password" name="password" class="form-control" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">الصلاحية *</label>
+                            <select name="role" class="form-select" id="add_user_role" onchange="toggleSpecialtyField('add_user_role', 'add_specialty_div')" required>
+                                <option value="doctor">طبيب</option>
+                                <option value="receptionist">موظف استقبال</option>
+                                <option value="admin">مدير النظام (Admin)</option>
+                            </select>
+                        </div>
+                        <div class="col-md-12" id="add_specialty_div">
+                            <label class="form-label">التخصص الطبي</label>
+                            <input type="text" name="specialty" class="form-control" placeholder="مثال: علاج طبيعي / باطنة / أطفال">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">رقم الهاتف</label>
+                            <input type="text" name="phone" class="form-control">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">البريد الإلكتروني</label>
+                            <input type="email" name="email" class="form-control">
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-success w-100"><i class="fas fa-save"></i> حفظ الحساب</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Edit User Modals -->
+{% for user in users %}
+<div class="modal fade" id="editUserModal{{ user['id'] }}" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 style="color: var(--accent-blue);"><i class="fas fa-edit"></i> تعديل مستخدم: {{ user['full_name'] }}</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form action="/settings/edit_user/{{ user['id'] }}" method="POST">
+                <div class="modal-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label">الاسم بالكامل *</label>
+                            <input type="text" name="full_name" class="form-control" value="{{ user['full_name'] }}" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">اسم المستخدم (لا يمكن تغييره)</label>
+                            <input type="text" class="form-control" value="{{ user['username'] }}" readonly disabled>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">كلمة مرور جديدة (اتركها فارغة لعدم التغيير)</label>
+                            <input type="password" name="password" class="form-control">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">الصلاحية *</label>
+                            <select name="role" class="form-select" id="edit_role_{{ user['id'] }}" onchange="toggleSpecialtyField('edit_role_{{ user['id'] }}', 'edit_specialty_div_{{ user['id'] }}')" required>
+                                <option value="doctor" {% if user['role'] == 'doctor' %}selected{% endif %}>طبيب</option>
+                                <option value="receptionist" {% if user['role'] == 'receptionist' %}selected{% endif %}>موظف استقبال</option>
+                                <option value="admin" {% if user['role'] == 'admin' %}selected{% endif %}>مدير النظام (Admin)</option>
+                            </select>
+                        </div>
+                        <div class="col-md-12" id="edit_specialty_div_{{ user['id'] }}" style="{% if user['role'] != 'doctor' %}display: none;{% endif %}">
+                            <label class="form-label">التخصص الطبي</label>
+                            <input type="text" name="specialty" class="form-control" value="{{ user['specialty'] or '' }}" placeholder="مثال: علاج طبيعي / باطنة / أطفال">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">رقم الهاتف</label>
+                            <input type="text" name="phone" class="form-control" value="{{ user['phone'] or '' }}">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">البريد الإلكتروني</label>
+                            <input type="email" name="email" class="form-control" value="{{ user['email'] or '' }}">
+                        </div>
+                        <div class="col-md-12">
+                            <div class="form-check form-switch mt-2">
+                                <input class="form-check-input" type="checkbox" name="is_active" id="active_switch_{{ user['id'] }}" value="1" {% if user['is_active'] %}checked{% endif %}>
+                                <label class="form-check-label" for="active_switch_{{ user['id'] }}">حساب نشط (تمكين تسجيل الدخول)</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-primary w-100"><i class="fas fa-save"></i> حفظ التعديلات</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endfor %}
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function toggleSpecialtyField(roleSelectId, specialtyDivId) {
+    const roleSelect = document.getElementById(roleSelectId);
+    const specialtyDiv = document.getElementById(specialtyDivId);
+    if (roleSelect && specialtyDiv) {
+        if (roleSelect.value === 'doctor') {
+            specialtyDiv.style.display = 'block';
+        } else {
+            specialtyDiv.style.display = 'none';
+        }
+    }
+}
+</script>
+{% endblock %}

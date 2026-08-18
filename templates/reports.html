@@ -1,0 +1,738 @@
+{% extends 'base.html' %}
+{% block title %}التقارير المالية - نظام العيادة{% endblock %}
+
+{% block content %}
+<style>
+    .filter-card {
+        background: var(--card-bg);
+        border-radius: 16px;
+        border: 1px solid var(--border-color);
+        padding: 22px 25px;
+        margin-bottom: 22px;
+    }
+    .report-summary {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 14px;
+        margin-bottom: 22px;
+        width: 100%;
+        box-sizing: border-box;
+    }
+    .summary-box {
+        background: var(--card-bg);
+        border-radius: 16px;
+        padding: 22px 18px;
+        border: 1px solid var(--border-color);
+        text-align: center;
+        position: relative;
+        overflow: hidden;
+        transition: transform .2s;
+    }
+    .summary-box:hover { transform: translateY(-3px); }
+    .summary-box::before {
+        content: '';
+        position: absolute;
+        top: 0; right: 0;
+        width: 100%; height: 4px;
+    }
+    .summary-box.s-income::before  { background: linear-gradient(to left,#10b981,#059669); }
+    .summary-box.s-visits::before  { background: linear-gradient(to left,#0ea5e9,#0284c7); }
+    .summary-box.s-avg::before     { background: linear-gradient(to left,#8b5cf6,#7c3aed); }
+    .summary-box.s-paid::before    { background: linear-gradient(to left,#f59e0b,#d97706); }
+    .summary-box.s-unpaid::before  { background: linear-gradient(to left,#ef4444,#dc2626); }
+    .summary-box.s-debtors::before { background: linear-gradient(to left,#f43f5e,#be123c); }
+    .summary-icon {
+        width: 46px; height: 46px;
+        border-radius: 13px;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 1.35rem;
+        margin: 0 auto 12px;
+    }
+    .s-income  .summary-icon { background:rgba(16,185,129,.15);  color:#10b981; }
+    .s-visits  .summary-icon { background:rgba(14,165,233,.15);  color:#0ea5e9; }
+    .s-avg     .summary-icon { background:rgba(139,92,246,.15);  color:#8b5cf6; }
+    .s-paid    .summary-icon { background:rgba(245,158,11,.15);  color:#f59e0b; }
+    .s-unpaid  .summary-icon { background:rgba(239,68,68,.15);   color:#ef4444; }
+    .s-debtors .summary-icon { background:rgba(244,63,94,.15);   color:#f43f5e; }
+    .summary-value { font-size:1.75rem; font-weight:900; color:var(--text-main); line-height:1.1; }
+    .summary-label { color:var(--text-muted); font-size:.82rem; font-weight:600; margin-top:4px; }
+    .summary-sub   { font-size:.72rem; color:var(--text-muted); margin-top:3px; }
+
+    .report-tabs {
+        display: flex;
+        gap: 6px;
+        margin-bottom: 18px;
+        border-bottom: 1px solid var(--border-color);
+        padding-bottom: 0;
+    }
+    .rtab {
+        padding: 10px 20px;
+        border-radius: 10px 10px 0 0;
+        font-weight: 700;
+        font-size: .9rem;
+        cursor: pointer;
+        border: 1px solid transparent;
+        border-bottom: none;
+        color: var(--text-muted);
+        background: transparent;
+        transition: all .2s;
+        position: relative;
+        bottom: -1px;
+    }
+    .rtab.active {
+        background: var(--card-bg);
+        border-color: var(--border-color);
+        color: var(--accent-blue);
+        border-bottom-color: var(--card-bg);
+    }
+    .rtab:hover:not(.active) { color: var(--text-main); }
+    .tab-pane { display: none; }
+    .tab-pane.active { display: block; }
+
+    .report-table {
+        background: var(--card-bg);
+        border-radius: 16px;
+        border: 1px solid var(--border-color);
+        overflow: hidden;
+    }
+    .table-title {
+        padding: 18px 22px 12px;
+        font-weight: 900;
+        font-size: 1rem;
+        color: var(--text-main);
+        border-bottom: 1px solid var(--border-color);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    .badge-count {
+        background: rgba(14,165,233,.15);
+        color: #0ea5e9;
+        padding: 3px 10px;
+        border-radius: 20px;
+        font-size: .78rem;
+        font-weight: 700;
+    }
+
+    .debt-card {
+        background: var(--card-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 14px;
+        padding: 18px 20px;
+        margin-bottom: 12px;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        transition: transform .2s, border-color .2s;
+        width: 100%;
+        box-sizing: border-box;
+    }
+    .debt-card:hover { transform: translateY(-2px); border-color: rgba(239,68,68,.35); }
+    .debt-avatar {
+        width: 48px; height: 48px;
+        border-radius: 50%;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 1.3rem;
+        flex-shrink: 0;
+        color: white;
+        border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+    .debt-avatar.male {
+        background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+        box-shadow: 0 4px 10px rgba(59, 130, 246, 0.25);
+    }
+    .debt-avatar.female {
+        background: linear-gradient(135deg, #ec4899, #be185d);
+        box-shadow: 0 4px 10px rgba(236, 72, 153, 0.25);
+    }
+    .debt-name { font-weight: 900; font-size: 1rem; color: var(--text-main); }
+    .debt-phone { font-size: .8rem; color: var(--text-muted); }
+    .debt-amount {
+        margin-right: auto;
+        text-align: left;
+        font-size: 1.35rem;
+        font-weight: 900;
+        color: #ef4444;
+        white-space: nowrap;
+    }
+    .debt-visits { font-size: .75rem; color: var(--text-muted); }
+
+    .payment-progress {
+        height: 6px;
+        border-radius: 3px;
+        background: rgba(255,255,255,.08);
+        overflow: hidden;
+        margin-top: 5px;
+    }
+    .payment-progress-bar {
+        height: 100%;
+        border-radius: 3px;
+        background: linear-gradient(to right, #10b981, #0ea5e9);
+        transition: width .5s;
+    }
+
+    .sbadge {
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-size: .76rem;
+        font-weight: 700;
+        display: inline-flex; align-items: center; gap: 5px;
+    }
+    .sbadge-paid   { background:rgba(16,185,129,.15); color:#10b981; }
+    .sbadge-unpaid { background:rgba(239,68,68,.15);  color:#ef4444; }
+    .sbadge-pkg    { background:rgba(99,102,241,.15); color:#6366f1; }
+
+    .btn-settle {
+        padding: 6px 14px;
+        border-radius: 8px;
+        font-size: .8rem;
+        font-weight: 700;
+        background: rgba(16,185,129,.15);
+        color: #10b981;
+        border: 1px solid rgba(16,185,129,.3);
+        cursor: pointer;
+        transition: all .2s;
+        text-decoration: none;
+        white-space: nowrap;
+        display: inline-block;
+    }
+    .btn-settle:hover { background: rgba(16,185,129,.28); color: #10b981; transform: scale(1.04); }
+    .method-pill {
+        font-size:.72rem; font-weight:700;
+        padding:2px 9px; border-radius:20px;
+        background:rgba(255,255,255,.07);
+        color:var(--text-muted);
+    }
+
+    /* ── Filter Bar ── */
+    .flt-group { display:flex; flex-direction:column; }
+    .flt-label {
+        font-size:.72rem; font-weight:700; color:var(--text-muted);
+        margin-bottom:5px; white-space:nowrap;
+        display:flex; align-items:center; gap:5px;
+    }
+    .flt-label i { color:#0ea5e9; font-size:.68rem; }
+    .flt-input, .flt-select {
+        background: rgba(15,23,42,.85);
+        border: 1px solid rgba(255,255,255,.1);
+        color: var(--text-main);
+        padding: 8px 12px;
+        border-radius: 10px;
+        font-size: .85rem;
+        font-weight: 600;
+        outline: none;
+        transition: border-color .2s, box-shadow .2s;
+        width: 100%;
+        font-family: 'Cairo', sans-serif;
+        cursor: pointer;
+    }
+    .flt-input:focus, .flt-select:focus {
+        border-color: #0ea5e9;
+        box-shadow: 0 0 0 3px rgba(14,165,233,.12);
+    }
+    .flt-input:hover, .flt-select:hover {
+        border-color: rgba(255,255,255,.22);
+    }
+    .flt-select option { background: #1e293b; }
+    .filter-card {
+        background: var(--card-bg);
+        border-radius: 16px;
+        border: 1px solid var(--border-color);
+        padding: 16px 20px;
+        margin-bottom: 22px;
+    }
+
+    .print-header { display: none; }
+    @media print {
+        .sidebar,.btn,.flash-messages,.no-print,.report-tabs { display:none !important; }
+        .content { margin-right:0!important; margin-left:0!important; width:100%!important; padding:20px!important; }
+        .print-header { display:block!important; text-align:center; margin-bottom:25px; }
+        .print-header h2 { font-size:1.6rem; font-weight:900; color:#0f172a; margin-bottom:4px; }
+        .print-header p  { font-size:.95rem; color:#475569; margin:0; }
+        body { background:white!important; color:black!important; }
+        .report-table,.debt-card { border:1px solid #cbd5e1!important; background:#fff!important; border-radius:8px!important; }
+        .table thead th { background:#f1f5f9!important; color:#0f172a!important; }
+        .table tbody td { color:#1e293b!important; border-bottom:1px solid #e2e8f0!important; }
+        .summary-box { border:1px solid #cbd5e1!important; background:#fff!important; }
+        .summary-value,.debt-name { color:#000!important; }
+        .tab-pane { display:block!important; }
+        .debt-amount { color:#dc2626!important; }
+    }
+
+    /* ── Responsive ── */
+    @media (max-width: 767px) {
+        .report-summary { grid-template-columns: repeat(2, 1fr); }
+        .filter-card .row > div { flex: 0 0 100%; max-width: 100%; }
+        .report-tabs { overflow-x: auto; flex-wrap: nowrap; }
+        .rtab { white-space: nowrap; font-size: 0.82rem; padding: 8px 14px; }
+        .debt-card { flex-wrap: wrap; gap: 10px; }
+        .debt-amount { margin-right: 0; width: 100%; text-align: right; }
+        .table-responsive { font-size: 0.8rem; }
+        .page-header { flex-direction: column; align-items: flex-start; gap: 10px; }
+    }
+    @media (max-width: 575px) {
+        .report-summary { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+        .summary-value { font-size: 1.4rem; }
+        .summary-box { padding: 16px 12px; }
+    }
+</style>
+
+<div class="print-header">
+    <h2>{{ settings['clinic_name'] if settings and settings['clinic_name'] else 'Muscle Station' }}</h2>
+    <p><strong>التقرير المالي التفصيلي</strong></p>
+    {% if request.args.get('start_date') and request.args.get('end_date') %}
+    <p>الفترة: من {{ request.args.get('start_date') }} إلى {{ request.args.get('end_date') }}</p>
+    {% else %}
+    <p>الفترة: جميع السجلات التاريخية</p>
+    {% endif %}
+    <hr style="border-top:2px solid #0f172a; margin-top:12px;">
+</div>
+
+<div class="page-header no-print">
+    <div>
+        <h1 class="page-title"><i class="fas fa-chart-bar"></i> التقارير المالية والإحصائية</h1>
+        <p class="page-subtitle">تحليل أداء العيادة ومتابعة المديونيات</p>
+    </div>
+    <div class="d-flex gap-2">
+        <a href="/export/reports?start_date={{ request.args.get('start_date','') }}&end_date={{ request.args.get('end_date','') }}&payment_status={{ request.args.get('payment_status','') }}"
+           class="btn btn-success btn-sm d-flex align-items-center gap-2">
+            <i class="fas fa-file-excel"></i> تصدير CSV
+        </a>
+        <button onclick="window.print()" class="btn btn-outline-light btn-sm d-flex align-items-center gap-2">
+            <i class="fas fa-print"></i> طباعة
+        </button>
+    </div>
+</div>
+
+<!-- Filters -->
+<div class="filter-card no-print" style="padding: 16px 20px;">
+    <form action="/reports" method="GET">
+        <div style="display:flex; align-items:center; gap:10px; flex-wrap:nowrap;">
+
+            <!-- من تاريخ -->
+            <div class="flt-group" style="flex:1.2; min-width:130px;">
+                <div class="flt-label"><i class="fas fa-calendar-alt"></i> من تاريخ</div>
+                <input type="date" name="start_date" class="flt-input" value="{{ request.args.get('start_date','') }}">
+            </div>
+
+            <!-- فاصل -->
+            <div style="color:var(--text-muted); font-size:1.1rem; padding-top:18px; flex-shrink:0;">→</div>
+
+            <!-- إلى تاريخ -->
+            <div class="flt-group" style="flex:1.2; min-width:130px;">
+                <div class="flt-label"><i class="fas fa-calendar-check"></i> إلى تاريخ</div>
+                <input type="date" name="end_date" class="flt-input" value="{{ request.args.get('end_date','') }}">
+            </div>
+
+            <!-- فاصل عمودي -->
+            <div style="width:1px; height:42px; background:var(--border-color); flex-shrink:0; margin-top:18px;"></div>
+
+            <!-- حالة الدفع -->
+            <div class="flt-group" style="flex:1; min-width:110px;">
+                <div class="flt-label"><i class="fas fa-circle-dot"></i> حالة الدفع</div>
+                <select name="payment_status" class="flt-select">
+                    <option value="">الكل</option>
+                    <option value="مدفوع"     {% if request.args.get('payment_status')=='مدفوع' %}selected{% endif %}>✅ مدفوع</option>
+                    <option value="غير مدفوع" {% if request.args.get('payment_status')=='غير مدفوع' %}selected{% endif %}>⏳ متبقي</option>
+                </select>
+            </div>
+
+            <!-- طريقة الدفع -->
+            <div class="flt-group" style="flex:1; min-width:120px;">
+                <div class="flt-label"><i class="fas fa-wallet"></i> طريقة الدفع</div>
+                <select name="payment_method" class="flt-select">
+                    <option value="">الكل</option>
+                    <option value="نقدي"        {% if request.args.get('payment_method')=='نقدي' %}selected{% endif %}>💵 نقدي</option>
+                    <option value="فيزا"        {% if request.args.get('payment_method')=='فيزا' %}selected{% endif %}>💳 فيزا</option>
+                    <option value="فودافون كاش" {% if request.args.get('payment_method')=='فودافون كاش' %}selected{% endif %}>📱 فودافون كاش</option>
+                    <option value="انستاباي"   {% if request.args.get('payment_method')=='انستاباي' %}selected{% endif %}>📲 انستاباي</option>
+                    <option value="تحويل"       {% if request.args.get('payment_method')=='تحويل' %}selected{% endif %}>🏦 تحويل بنكي</option>
+                </select>
+            </div>
+
+            <!-- نوع الزيارة -->
+            <div class="flt-group" style="flex:1; min-width:130px;">
+                <div class="flt-label"><i class="fas fa-stethoscope"></i> نوع الزيارة</div>
+                <select name="visit_type" class="flt-select">
+                    <option value="">الكل</option>
+                    <option value="كشف"              {% if request.args.get('visit_type')=='كشف' %}selected{% endif %}>🔍 كشف</option>
+                    <option value="جلسة علاج طبيعي"  {% if request.args.get('visit_type')=='جلسة علاج طبيعي' %}selected{% endif %}>🏃 جلسة علاج طبيعي</option>
+                    <option value="تأهيل"            {% if request.args.get('visit_type')=='تأهيل' %}selected{% endif %}>💪 تأهيل</option>
+                    <option value="متابعة"           {% if request.args.get('visit_type')=='متابعة' %}selected{% endif %}>📋 متابعة</option>
+                    <option value="استشارة"          {% if request.args.get('visit_type')=='استشارة' %}selected{% endif %}>💬 استشارة</option>
+                </select>
+            </div>
+
+            <!-- أزرار -->
+            <div style="display:flex; gap:8px; flex-shrink:0; padding-top:18px;">
+                <button type="submit"
+                        style="padding:9px 22px; background:linear-gradient(135deg,#0ea5e9,#0284c7); border:none; border-radius:10px; color:white; font-weight:800; font-size:.88rem; cursor:pointer; white-space:nowrap; transition:all .2s; display:flex; align-items:center; gap:6px;"
+                        onmouseover="this.style.transform='translateY(-1px)';this.style.boxShadow='0 6px 20px rgba(14,165,233,.35)'"
+                        onmouseout="this.style.transform='';this.style.boxShadow=''">
+                    <i class="fas fa-filter"></i> فلتر
+                </button>
+                <a href="/reports"
+                   title="مسح الفلاتر"
+                   style="padding:9px 13px; background:rgba(255,255,255,.06); border:1px solid var(--border-color); border-radius:10px; color:var(--text-muted); font-size:.88rem; display:flex; align-items:center; transition:all .2s;"
+                   onmouseover="this.style.borderColor='#ef4444';this.style.color='#ef4444'"
+                   onmouseout="this.style.borderColor='';this.style.color=''">
+                    <i class="fas fa-times"></i>
+                </a>
+            </div>
+
+        </div>
+    </form>
+</div>
+
+<!-- Summary Cards -->
+<div class="report-summary">
+    <!-- 1. إجمالي الزيارات -->
+    <div class="summary-box s-visits">
+        <div class="summary-icon"><i class="fas fa-stethoscope"></i></div>
+        <div class="summary-value">{{ visits_count }}</div>
+        <div class="summary-label">إجمالي الزيارات</div>
+        <div class="summary-sub">{{ new_patients_count }} مريض جديد</div>
+    </div>
+    <!-- 2. إجمالي الدخل -->
+    <div class="summary-box s-income">
+        <div class="summary-icon"><i class="fas fa-coins"></i></div>
+        <div class="summary-value">{{ "{:,.0f}".format(total_income) }}</div>
+        <div class="summary-label">إجمالي الدخل ({{ settings['currency'] if settings else 'ج.م' }})</div>
+        <div class="summary-sub">{{ "{:,.0f}".format(paid_amount) }} محصّل فعلياً</div>
+    </div>
+    <!-- 3. إجمالي المحصّل -->
+    <div class="summary-box s-paid">
+        <div class="summary-icon"><i class="fas fa-check-circle"></i></div>
+        <div class="summary-value">{{ "{:,.0f}".format(paid_amount) }}</div>
+        <div class="summary-label">إجمالي المحصّل</div>
+        {% if total_income > 0 %}
+        <div class="payment-progress">
+            <div class="payment-progress-bar" style="width:{{ [[paid_amount/total_income*100|int, 0]|max, 100]|min }}%"></div>
+        </div>
+        <div class="summary-sub">{{ [[(paid_amount/total_income*100)|round|int, 0]|max, 100]|min }}% من الإجمالي</div>
+        {% endif %}
+    </div>
+    <!-- 4. إجمالي المديونيات -->
+    <div class="summary-box s-unpaid">
+        <div class="summary-icon"><i class="fas fa-hourglass-half"></i></div>
+        <div class="summary-value">{{ "{:,.0f}".format(unpaid_amount) }}</div>
+        <div class="summary-label">إجمالي المديونيات</div>
+        {% if total_income > 0 %}
+        <div class="payment-progress">
+            <div class="payment-progress-bar" style="width:{{ [[(unpaid_amount/total_income*100)|round|int, 0]|max, 100]|min }}%; background: linear-gradient(to right,#ef4444,#f97316);"></div>
+        </div>
+        <div class="summary-sub">{{ [[(unpaid_amount/total_income*100)|round|int, 0]|max, 100]|min }}% من الإجمالي</div>
+        {% else %}
+        <div class="summary-sub">{{ unpaid_visits_count }} زيارة غير مسددة</div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Tabs -->
+<div class="report-tabs no-print">
+    <button class="rtab active" onclick="switchTab('visits', this)">
+        <i class="fas fa-list-alt me-1"></i> تفاصيل الزيارات
+        <span class="badge-count ms-1">{{ visits_count }}</span>
+    </button>
+    <button class="rtab" onclick="switchTab('debtors', this)">
+        <i class="fas fa-exclamation-triangle me-1" style="color:#ef4444;"></i> المديونيات
+        <span class="badge-count ms-1" style="background:rgba(239,68,68,.15);color:#ef4444;">{{ debtors|length }}</span>
+    </button>
+
+</div>
+
+<!-- TAB 1: Visit Details -->
+<div class="tab-pane active" id="tab-visits">
+    <div class="report-table">
+        <div class="table-title">
+            <span><i class="fas fa-table me-2" style="color:#0ea5e9;"></i> سجل الزيارات التفصيلي</span>
+            <span class="badge-count">{{ visits_count }} زيارة</span>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-dark table-hover mb-0 text-end">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>التاريخ</th>
+                        <th>المريض</th>
+                        <th>التشخيص</th>
+                        <th>نوع الزيارة</th>
+                        <th>التكلفة</th>
+                        <th>المدفوع</th>
+                        <th>المتبقي</th>
+                        <th>الطريقة</th>
+                        <th>الحالة</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for visit in report_data %}
+                    <tr>
+                        <td class="text-muted small">{{ visit['id'] }}</td>
+                        <td style="font-family:monospace; font-size:.85rem;">{{ visit['visit_date'] }}</td>
+                        <td class="fw-bold">
+                            <a href="/patient/{{ visit['patient_id'] }}" style="color:var(--text-main); text-decoration:none;">
+                                {{ visit['name'] }}
+                            </a>
+                        </td>
+                        <td class="text-muted small">{{ visit['diagnosis'][:35] if visit['diagnosis'] else '—' }}{% if visit['diagnosis'] and visit['diagnosis']|length > 35 %}…{% endif %}</td>
+                        <td><span class="method-pill">{{ visit['visit_type'] or 'كشف' }}</span></td>
+                        <td style="color:#f59e0b; font-weight:900;">{{ "{:,.0f}".format(visit['cost'] or 0) }}</td>
+                        <td style="color:#10b981; font-weight:700;">{{ "{:,.0f}".format(visit['paid_amount'] if visit['paid_amount'] is not none else (visit['cost'] or 0)) }}</td>
+                        <td style="color:{% if (visit['remaining_amount'] or 0)|float > 0 %}#ef4444{% else %}#cbd5e1{% endif %}; font-weight:700;">
+                            {{ "{:,.0f}".format(visit['remaining_amount'] or 0) }}
+                        </td>
+                        <td><span class="method-pill">{{ visit['payment_method'] or 'نقدي' }}</span></td>
+                        <td>
+                            {% if visit['payment_status'] == 'مدفوع' %}
+                                <span class="sbadge sbadge-paid"><i class="fas fa-check-circle"></i> مدفوع</span>
+                            {% elif visit['payment_status'] == 'خصم من الباقة' %}
+                                <span class="sbadge sbadge-pkg"><i class="fas fa-box"></i> باقة</span>
+                            {% else %}
+                                <span class="sbadge sbadge-unpaid"><i class="fas fa-clock"></i> غير مدفوع</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="10" class="text-center py-5 text-muted">
+                            <i class="fas fa-inbox" style="font-size:2.5rem; display:block; margin-bottom:12px; opacity:.4;"></i>
+                            لا توجد سجلات لهذه الفترة
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+                {% if report_data %}
+                <tfoot>
+                    <tr style="background:rgba(255,255,255,.03); font-weight:900;">
+                        <td colspan="5" class="text-end pe-3 py-3">الإجماليات:</td>
+                        <td style="color:#f59e0b;">{{ "{:,.0f}".format(total_cost) }}</td>
+                        <td style="color:#10b981;">{{ "{:,.0f}".format(paid_amount) }}</td>
+                        <td style="color:#ef4444;">{{ "{:,.0f}".format(unpaid_amount) }}</td>
+                        <td colspan="2"></td>
+                    </tr>
+                </tfoot>
+                {% endif %}
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- TAB 2: Debtors -->
+<div class="tab-pane" id="tab-debtors">
+    {% if debtors %}
+    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+        <div style="color:var(--text-muted); font-size:.9rem;">
+            <i class="fas fa-info-circle me-1" style="color:#0ea5e9;"></i>
+            إجمالي المديونيات:
+            <strong style="color:#ef4444;">{{ "{:,.0f}".format(unpaid_amount) }} {{ settings['currency'] if settings else 'ج.م' }}</strong>
+            — {{ debtors|length }} مريض مدين
+        </div>
+        <a href="/reports?payment_status=غير مدفوع" class="btn btn-sm btn-outline-danger fw-bold">
+            <i class="fas fa-filter me-1"></i> عرض زيارات غير مدفوعة فقط
+        </a>
+    </div>
+
+    {% for debtor in debtors %}
+    <div class="debt-card">
+        {% if debtor['gender'] == 'أنثى' %}
+        <div class="debt-avatar female" title="أنثى"><i class="fas fa-female"></i></div>
+        {% else %}
+        <div class="debt-avatar male" title="ذكر"><i class="fas fa-male"></i></div>
+        {% endif %}
+        <div style="flex:1; min-width:0;">
+            <div class="debt-name">
+                <a href="/patient/{{ debtor['patient_id'] }}" style="color:var(--text-main); text-decoration:none;">
+                    {{ debtor['name'] }}
+                </a>
+            </div>
+            <div class="debt-phone"><i class="fas fa-phone-alt me-1"></i>{{ debtor['phone'] }}</div>
+            <div class="debt-visits mt-1">
+                <i class="fas fa-calendar-check me-1"></i>{{ debtor['visit_count'] }} زيارة غير مسددة
+                {% if debtor['last_visit'] %}
+                &nbsp;·&nbsp; آخر زيارة: {{ debtor['last_visit'] }}
+                {% endif %}
+            </div>
+            {% if debtor['total_cost'] > 0 %}
+            <div class="payment-progress mt-2" style="max-width:220px;">
+                <div class="payment-progress-bar"
+                     style="width:{{ [[debtor['total_paid']/debtor['total_cost']*100|int, 0]|max, 100]|min }}%"></div>
+            </div>
+            <div style="font-size:.72rem; color:var(--text-muted); margin-top:3px;">
+                دفع {{ "{:,.0f}".format(debtor['total_paid']) }} من {{ "{:,.0f}".format(debtor['total_cost']) }} {{ settings['currency'] if settings else 'ج.م' }}
+            </div>
+            {% endif %}
+        </div>
+        <div style="display:flex; flex-direction:column; align-items:flex-end; gap:8px; flex-shrink:0;">
+            <div class="debt-amount">
+                {{ "{:,.0f}".format(debtor['total_debt']) }}
+                <span style="font-size:.75rem; font-weight:600;">{{ settings['currency'] if settings else 'ج.م' }}</span>
+            </div>
+            <button class="btn-settle"
+               onclick="openSettleModal({{ debtor['patient_id'] }}, '{{ debtor['name'] }}', {{ debtor['total_debt'] }})">
+                <i class="fas fa-hand-holding-usd me-1"></i>تسوية
+            </button>
+        </div>
+    </div>
+    {% endfor %}
+
+    {% else %}
+    <div class="report-table">
+        <div class="text-center py-5">
+            <i class="fas fa-check-circle" style="font-size:3rem; display:block; margin-bottom:14px; color:#10b981; opacity:.7;"></i>
+            <div style="font-size:1.1rem; font-weight:700; color:#10b981;">ممتاز! لا توجد مديونيات</div>
+            <div class="mt-2 small text-muted">جميع الزيارات في الفترة المختارة مسددة بالكامل</div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+
+<!-- ═══ Modal التسوية ═══ -->
+<div id="settleModal" style="display:none; position:fixed; inset:0; z-index:9999; background:rgba(0,0,0,.65); backdrop-filter:blur(4px); align-items:center; justify-content:center;">
+    <div style="background:var(--card-bg); border:1px solid var(--border-color); border-radius:20px; padding:32px 28px; width:100%; max-width:420px; margin:16px; box-shadow:0 25px 50px rgba(0,0,0,.5); position:relative;">
+        <!-- Header -->
+        <div style="display:flex; align-items:center; gap:12px; margin-bottom:22px;">
+            <div style="width:46px;height:46px;border-radius:13px;background:rgba(16,185,129,.15);color:#10b981;display:flex;align-items:center;justify-content:center;font-size:1.3rem;flex-shrink:0;">
+                <i class="fas fa-hand-holding-usd"></i>
+            </div>
+            <div>
+                <div style="font-size:1.05rem;font-weight:900;color:var(--text-main);">تسوية مديونية</div>
+                <div id="settle-patient-name" style="font-size:.85rem;color:var(--text-muted);"></div>
+            </div>
+            <button onclick="closeSettleModal()" style="margin-right:auto;background:transparent;border:none;color:var(--text-muted);font-size:1.2rem;cursor:pointer;padding:4px 8px;">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+
+        <!-- المبلغ المتبقي -->
+        <div style="background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.25);border-radius:12px;padding:14px 16px;margin-bottom:20px;text-align:center;">
+            <div style="font-size:.8rem;color:var(--text-muted);margin-bottom:4px;">إجمالي المديونية</div>
+            <div id="settle-total-debt" style="font-size:1.8rem;font-weight:900;color:#ef4444;"></div>
+        </div>
+
+        <form id="settleForm" method="POST">
+            <!-- نوع التسوية -->
+            <div style="margin-bottom:18px;">
+                <label style="font-size:.85rem;font-weight:700;color:var(--text-muted);display:block;margin-bottom:10px;">نوع السداد</label>
+                <div style="display:flex;gap:10px;">
+                    <label style="flex:1;cursor:pointer;">
+                        <input type="radio" name="settle_type" value="full" id="settle-full" checked onchange="togglePartial()" style="display:none;">
+                        <div class="settle-type-btn active" id="btn-full" style="border:2px solid rgba(16,185,129,.4);border-radius:12px;padding:12px 8px;text-align:center;background:rgba(16,185,129,.1);transition:all .2s;">
+                            <i class="fas fa-check-double" style="color:#10b981;font-size:1.1rem;display:block;margin-bottom:5px;"></i>
+                            <span style="font-size:.82rem;font-weight:700;color:#10b981;">سداد كامل</span>
+                        </div>
+                    </label>
+                    <label style="flex:1;cursor:pointer;">
+                        <input type="radio" name="settle_type" value="partial" id="settle-partial" onchange="togglePartial()" style="display:none;">
+                        <div class="settle-type-btn" id="btn-partial" style="border:2px solid var(--border-color);border-radius:12px;padding:12px 8px;text-align:center;background:transparent;transition:all .2s;">
+                            <i class="fas fa-coins" style="color:#f59e0b;font-size:1.1rem;display:block;margin-bottom:5px;"></i>
+                            <span style="font-size:.82rem;font-weight:700;color:var(--text-muted);">دفعة جزئية</span>
+                        </div>
+                    </label>
+                </div>
+            </div>
+
+            <!-- حقل المبلغ الجزئي -->
+            <div id="partial-amount-row" style="display:none; margin-bottom:18px;">
+                <label style="font-size:.85rem;font-weight:700;color:var(--text-muted);display:block;margin-bottom:6px;">
+                    <i class="fas fa-money-bill-wave me-1" style="color:#f59e0b;"></i>المبلغ المدفوع
+                </label>
+                <input type="number" name="partial_amount" id="partial-amount-input"
+                       min="1" step="1"
+                       style="width:100%;background:rgba(15,23,42,.8);border:1px solid #334155;color:#f8fafc;padding:12px 15px;border-radius:12px;font-size:1rem;font-weight:700;outline:none;direction:ltr;text-align:left;"
+                       placeholder="0"
+                       onfocus="this.style.borderColor='#0ea5e9'" onblur="this.style.borderColor='#334155'">
+            </div>
+
+            <!-- طريقة الدفع -->
+            <div style="margin-bottom:22px;">
+                <label style="font-size:.85rem;font-weight:700;color:var(--text-muted);display:block;margin-bottom:6px;">
+                    <i class="fas fa-wallet me-1" style="color:#8b5cf6;"></i>طريقة الدفع
+                </label>
+                <select name="payment_method"
+                        style="width:100%;background:rgba(15,23,42,.8);border:1px solid #334155;color:#f8fafc;padding:12px 15px;border-radius:12px;font-size:.9rem;font-weight:700;outline:none;">
+                    <option value="نقدي">💵 نقدي</option>
+                    <option value="فيزا">💳 فيزا / بطاقة</option>
+                    <option value="تحويل">🏦 تحويل بنكي</option>
+                    <option value="انستاباي">📱 انستاباي</option>
+                </select>
+            </div>
+
+            <!-- أزرار التأكيد -->
+            <div style="display:flex;gap:10px;">
+                <button type="submit" id="settle-confirm-btn"
+                        style="flex:1;padding:13px;background:linear-gradient(135deg,#10b981,#059669);border:none;border-radius:12px;color:white;font-weight:900;font-size:.95rem;cursor:pointer;transition:all .2s;"
+                        onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform=''">
+                    <i class="fas fa-check me-1"></i>تأكيد السداد
+                </button>
+                <button type="button" onclick="closeSettleModal()"
+                        style="padding:13px 18px;background:rgba(255,255,255,.06);border:1px solid var(--border-color);border-radius:12px;color:var(--text-muted);font-weight:700;cursor:pointer;">
+                    إلغاء
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+function switchTab(name, btn) {
+    document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.rtab').forEach(b => b.classList.remove('active'));
+    document.getElementById('tab-' + name).classList.add('active');
+    btn.classList.add('active');
+}
+
+function openSettleModal(patientId, patientName, totalDebt) {
+    document.getElementById('settle-patient-name').textContent = patientName;
+    document.getElementById('settle-total-debt').textContent = totalDebt.toLocaleString('ar-EG', {maximumFractionDigits:0}) + ' ج.م';
+    document.getElementById('settleForm').action = '/settle_debt/' + patientId;
+    // reset
+    document.getElementById('settle-full').checked = true;
+    document.getElementById('partial-amount-row').style.display = 'none';
+    document.getElementById('btn-full').style.border = '2px solid rgba(16,185,129,.4)';
+    document.getElementById('btn-full').style.background = 'rgba(16,185,129,.1)';
+    document.querySelector('#btn-full span').style.color = '#10b981';
+    document.getElementById('btn-partial').style.border = '2px solid var(--border-color)';
+    document.getElementById('btn-partial').style.background = 'transparent';
+    document.querySelector('#btn-partial span').style.color = 'var(--text-muted)';
+    const modal = document.getElementById('settleModal');
+    modal.style.display = 'flex';
+    setTimeout(() => modal.querySelector('div').style.animation = 'none', 10);
+}
+
+function closeSettleModal() {
+    document.getElementById('settleModal').style.display = 'none';
+}
+
+function togglePartial() {
+    const isFull = document.getElementById('settle-full').checked;
+    const partialRow = document.getElementById('partial-amount-row');
+    const btnFull    = document.getElementById('btn-full');
+    const btnPartial = document.getElementById('btn-partial');
+
+    if (isFull) {
+        partialRow.style.display = 'none';
+        btnFull.style.border     = '2px solid rgba(16,185,129,.4)';
+        btnFull.style.background = 'rgba(16,185,129,.1)';
+        btnFull.querySelector('span').style.color = '#10b981';
+        btnPartial.style.border     = '2px solid var(--border-color)';
+        btnPartial.style.background = 'transparent';
+        btnPartial.querySelector('span').style.color = 'var(--text-muted)';
+    } else {
+        partialRow.style.display = 'block';
+        document.getElementById('partial-amount-input').focus();
+        btnPartial.style.border     = '2px solid rgba(245,158,11,.4)';
+        btnPartial.style.background = 'rgba(245,158,11,.1)';
+        btnPartial.querySelector('span').style.color = '#f59e0b';
+        btnFull.style.border     = '2px solid var(--border-color)';
+        btnFull.style.background = 'transparent';
+        btnFull.querySelector('span').style.color = 'var(--text-muted)';
+    }
+}
+
+// إغلاق بالضغط خارج الـ modal
+document.getElementById('settleModal').addEventListener('click', function(e) {
+    if (e.target === this) closeSettleModal();
+});
+</script>
+{% endblock %}

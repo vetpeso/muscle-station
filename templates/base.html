@@ -1,0 +1,931 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}نظام العيادة الذكي{% endblock %}</title>
+    <link href="/static/css/bootstrap.min.css" rel="stylesheet">
+    <link href="/static/css/all.min.css" rel="stylesheet">
+    <link href="/static/css/cairo-font.css" rel="stylesheet">
+    <style>
+        :root {
+            --bg-dark: #0b1120;
+            --sidebar-bg: #0f172a;
+            --card-bg: #1e293b;
+            --text-main: #f1f5f9;
+            --text-muted: #94a3b8;
+            --accent-blue: #38bdf8;
+            --accent-green: #34d399;
+            --accent-orange: #facc15;
+            --accent-red: #f87171;
+            --accent-purple: #a78bfa;
+            --accent-pink: #f472b6;
+            --border-color: #334155;
+        }
+
+        /* Override Bootstrap text-muted for dark mode */
+        .text-muted { color: var(--text-muted) !important; }
+        .small, small { color: var(--text-muted); }
+
+        * { font-family: 'Cairo', sans-serif; }
+
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            margin: 0;
+            overflow-x: hidden;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            position: fixed;
+            right: 0;
+            top: 0;
+            bottom: 0;
+            height: 100vh;
+            width: 280px;
+            background: var(--sidebar-bg);
+            border-left: 1px solid var(--border-color);
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            transition: all 0.3s ease;
+            overflow-y: auto;
+            overflow-x: hidden;
+        }
+
+        .sidebar-header {
+            padding: 25px 20px;
+            text-align: center;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        /* ─── High-Fidelity Muscle Station Brand Logo (Sidebar Version) ─── */
+        .clinic-logo-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            direction: ltr;
+            margin-bottom: 5px;
+            width: 100%;
+        }
+
+        .logo-main-box {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 2px solid #111111;
+            padding: 2px 10px;
+            position: relative;
+            background: #ffffff;
+            overflow: hidden;
+            width: 220px;
+            height: 52px;
+            border-radius: 10px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+        }
+
+        /* Background grid/staff lines similar to musical staff */
+        .logo-main-box::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(rgba(0,0,0,0) 0%, rgba(0,0,0,0) 18%, #222 18%, #222 20%, rgba(0,0,0,0) 20%, rgba(0,0,0,0) 38%, #222 38%, #222 40%, rgba(0,0,0,0) 40%, rgba(0,0,0,0) 58%, #222 58%, #222 60%, rgba(0,0,0,0) 60%, rgba(0,0,0,0) 78%, #222 78%, #222 80%, rgba(0,0,0,0) 80%, rgba(0,0,0,0) 98%, #222 98%, #222 100%);
+            background-size: 100% 10px;
+            opacity: 0.2;
+            z-index: 1;
+            pointer-events: none;
+        }
+
+        .logo-graphics {
+            width: 38px;
+            height: 38px;
+            z-index: 2;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 4px;
+        }
+
+        .logo-graphics svg {
+            width: 100%;
+            height: 100%;
+        }
+
+        .logo-text-box {
+            display: flex;
+            align-items: center;
+            font-family: 'Arial Black', Impact, sans-serif;
+            z-index: 2;
+            gap: 2px;
+            margin-top: -2px;
+        }
+
+        .text-muscle {
+            color: #bd0f26; /* Deep solid red */
+            font-size: 1.45rem;
+            font-weight: 900;
+            letter-spacing: -1px;
+            text-transform: uppercase;
+        }
+
+        .text-station {
+            color: #ffffff; /* White fill with solid outline */
+            font-size: 1.45rem;
+            font-weight: 900;
+            letter-spacing: -1px;
+            text-transform: uppercase;
+            -webkit-text-stroke: 1.2px #111111;
+            text-shadow: 1.5px 1.5px 0px rgba(0,0,0,0.15);
+        }
+
+        /* Golden Arabic subtitle under the logo frame */
+        .logo-subtitle-ar {
+            font-family: 'Cairo', sans-serif;
+            font-size: 0.65rem;
+            font-weight: 800;
+            color: #eab308; /* Gorgeous golden color */
+            -webkit-text-stroke: 0.2px #000000;
+            text-shadow: 1px 1px 1px rgba(0,0,0,0.8);
+            margin-top: 8px;
+            text-align: center;
+            direction: rtl;
+            width: 100%;
+            white-space: nowrap;
+            letter-spacing: 0.1px;
+        }
+
+        .logo-subtitle-ar span.sep {
+            color: #bd0f26;
+            margin: 0 4px;
+            font-size: 0.75rem;
+            -webkit-text-stroke: none;
+            text-shadow: none;
+        }
+
+        .sidebar-nav {
+            flex: 1;
+            padding: 15px 12px;
+            overflow-y: auto;
+        }
+
+        .nav-section {
+            margin-bottom: 20px;
+        }
+
+        .nav-section-title {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            padding: 0 15px;
+            margin-bottom: 8px;
+            letter-spacing: 1px;
+        }
+
+        .sidebar a {
+            display: flex;
+            align-items: center;
+            color: var(--text-muted);
+            text-decoration: none;
+            padding: 12px 16px;
+            margin: 3px 8px;
+            border-radius: 10px;
+            transition: all 0.25s ease;
+            font-weight: 600;
+            font-size: 0.95rem;
+        }
+
+        .sidebar a i {
+            margin-left: 12px;
+            font-size: 1.1rem;
+            width: 24px;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .sidebar a:hover {
+            background: rgba(255,255,255,0.05);
+            color: var(--text-main);
+        }
+
+        .sidebar a.active-nav {
+            background: linear-gradient(135deg, rgba(14, 165, 233, 0.15), rgba(139, 92, 246, 0.15));
+            color: var(--accent-blue);
+            border-right: 3px solid var(--accent-blue);
+        }
+
+        .sidebar a.active-nav i { color: var(--accent-blue); }
+
+        .sidebar-footer {
+            padding: 15px;
+            border-top: 1px solid var(--border-color);
+        }
+
+        .user-card {
+            background: rgba(255,255,255,0.03);
+            border-radius: 12px;
+            padding: 12px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 900;
+            color: white;
+            font-size: 1rem;
+        }
+
+        .user-info { flex: 1; }
+        .user-name { font-weight: 700; font-size: 0.9rem; color: var(--text-main); }
+        .user-role { font-size: 0.75rem; color: var(--text-muted); }
+
+        /* Content */
+        .content {
+            margin-right: 280px;
+            margin-left: 0;
+            width: calc(100% - 280px);
+            box-sizing: border-box;
+            padding: 25px;
+            min-height: 100vh;
+        }
+
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .page-title {
+            font-weight: 900;
+            font-size: 1.6rem;
+            color: var(--text-main);
+            margin: 0;
+        }
+
+        .page-subtitle {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            margin-top: 5px;
+        }
+
+        /* Cards */
+        .card {
+            background-color: var(--card-bg) !important;
+            border: 1px solid var(--border-color) !important;
+            border-radius: 16px !important;
+            color: var(--text-main) !important;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        .card-header {
+            background: transparent !important;
+            border-bottom: 1px solid var(--border-color) !important;
+            padding: 20px 25px !important;
+        }
+
+        /* Forms */
+        .form-control, .form-select {
+            background-color: rgba(15, 23, 42, 0.6) !important;
+            border: 1px solid var(--border-color) !important;
+            color: var(--text-main) !important;
+            border-radius: 10px !important;
+            padding: 10px 15px;
+        }
+
+        .form-control:focus, .form-select:focus {
+            border-color: var(--accent-blue) !important;
+            box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.15) !important;
+        }
+
+        .form-label {
+            color: var(--text-muted);
+            font-weight: 600;
+            font-size: 0.9rem;
+            margin-bottom: 8px;
+        }
+
+        /* Buttons */
+        .btn {
+            border-radius: 10px !important;
+            font-weight: 700 !important;
+            padding: 10px 20px;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--accent-blue), #0284c7) !important;
+            border: none !important;
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, var(--accent-green), #059669) !important;
+            border: none !important;
+        }
+
+        .btn-warning {
+            background: linear-gradient(135deg, var(--accent-orange), #d97706) !important;
+            border: none !important;
+            color: white !important;
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, var(--accent-red), #dc2626) !important;
+            border: none !important;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+        }
+
+        /* Tables */
+        .table {
+            color: var(--text-main) !important;
+        }
+
+        .table thead th {
+            background: rgba(15, 23, 42, 0.8) !important;
+            color: var(--accent-blue);
+            font-weight: 900;
+            border: none;
+            padding: 15px;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .table tbody td {
+            padding: 15px;
+            border-color: var(--border-color);
+            vertical-align: middle;
+        }
+
+        .table tbody tr:hover {
+            background: rgba(255,255,255,0.02) !important;
+        }
+
+        /* Modal */
+        .modal-content {
+            background-color: var(--card-bg) !important;
+            color: var(--text-main) !important;
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+        }
+
+        .modal-header {
+            border-bottom: 1px solid var(--border-color);
+            padding: 20px 25px;
+        }
+
+        .modal-footer {
+            border-top: 1px solid var(--border-color);
+            padding: 15px 25px;
+        }
+
+        /* Badges */
+        .badge {
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-weight: 700;
+            font-size: 0.8rem;
+        }
+
+        /* Stats Cards */
+        .stat-card {
+            background: var(--card-bg);
+            border-radius: 16px;
+            padding: 25px;
+            border: 1px solid var(--border-color);
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 4px;
+            height: 100%;
+            border-radius: 0 16px 16px 0;
+        }
+
+        .stat-card.blue::before { background: var(--accent-blue); }
+        .stat-card.green::before { background: var(--accent-green); }
+        .stat-card.orange::before { background: var(--accent-orange); }
+        .stat-card.red::before { background: var(--accent-red); }
+        .stat-card.purple::before { background: var(--accent-purple); }
+        .stat-card.pink::before { background: var(--accent-pink); }
+
+        .stat-icon {
+            width: 50px;
+            height: 50px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            margin-bottom: 15px;
+        }
+
+        .stat-icon.blue { background: rgba(14, 165, 233, 0.15); color: var(--accent-blue); }
+        .stat-icon.green { background: rgba(16, 185, 129, 0.15); color: var(--accent-green); }
+        .stat-icon.orange { background: rgba(245, 158, 11, 0.15); color: var(--accent-orange); }
+        .stat-icon.red { background: rgba(239, 68, 68, 0.15); color: var(--accent-red); }
+        .stat-icon.purple { background: rgba(139, 92, 246, 0.15); color: var(--accent-purple); }
+        .stat-icon.pink { background: rgba(236, 72, 153, 0.15); color: var(--accent-pink); }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 900;
+            color: var(--text-main);
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            font-weight: 600;
+        }
+
+        /* Flash Messages */
+        .flash-messages {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            z-index: 9999;
+            max-width: 400px;
+        }
+
+        /* Animations */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .animate-fade-in {
+            animation: fadeIn 0.5s ease forwards;
+        }
+
+        /* Scrollbar */
+        /* Hide number input spinners */
+        input[type=number]::-webkit-inner-spin-button,
+        input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+        input[type=number] { -moz-appearance: textfield; }
+
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: var(--bg-dark); }
+        ::-webkit-scrollbar-thumb { background: var(--border-color); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+
+        /* Print */
+        @media print {
+            .sidebar, .btn, .flash-messages, .no-print { display: none !important; }
+            html, body { height: auto !important; overflow: visible !important; }
+            .content { margin-left: 0 !important; margin-right: 0 !important; width: 100% !important; padding: 20px !important; height: auto !important; min-height: auto !important; }
+            body { background: white !important; color: black !important; }
+        }
+
+        /* ══════════════════════════════════════════
+           FIXED LAYOUT — SAME ON ALL SCREENS
+           ══════════════════════════════════════════ */
+
+        *, *::before, *::after { box-sizing: border-box; }
+
+        html, body {
+            height: 100%;
+            margin: 0;
+            overflow-x: hidden;
+            width: 100%;
+        }
+
+        .sidebar-toggle-btn, .sidebar-overlay { display: none !important; }
+
+        .sidebar {
+            position: fixed !important;
+            right: 0; top: 0; bottom: 0;
+            width: 280px !important;
+            height: 100vh;
+            z-index: 1000;
+            transform: none !important;
+        }
+
+        .content {
+            margin-right: 280px !important;
+            width: calc(100% - 280px) !important;
+            padding: 28px !important;
+            min-width: 0;
+            overflow-x: hidden;
+        }
+
+        .content .row {
+            margin-right: 0;
+            margin-left: 0;
+        }
+        .content .container-fluid {
+            padding-right: 15px;
+            padding-left: 15px;
+            max-width: 100%;
+        }
+
+        .kpi-card, .stat-card {
+            width: 100%;
+            height: 100%;
+            box-sizing: border-box;
+        }
+
+        .text-muscle, .text-station { font-size: 1.45rem; }
+        .logo-main-box { width: 220px; height: 52px; }
+        .logo-graphics { width: 38px; height: 38px; }
+        .sidebar a { font-size: .9rem; padding: 12px 16px; }
+        .page-title { font-size: 1.5rem; }
+        .stat-value, .kpi-val { font-size: 1.8rem; }
+    
+        /* Global Modal Close Button Styling (Top-Left Red Circle with white X) */
+        .modal-content .btn-close,
+        .modal-header .btn-close {
+            position: absolute !important;
+            top: 15px !important;
+            left: 15px !important;
+            right: auto !important;
+            z-index: 1060 !important;
+            background-color: #ef4444 !important;
+            /* Custom white SVG X icon */
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='%23fff'%3e%3cpath d='M.293.293a1 1 0 0 1 1.414 0L8 6.586 14.293.293a1 1 0 1 1 1.414 1.414L9.414 8l6.293 6.293a1 1 0 0 1-1.414 1.414L8 9.414l-6.293 6.293a1 1 0 0 1-1.414-1.414L6.586 8 .293 1.707a1 1 0 0 1 0-1.414z'/%3e%3c/svg%3e") !important;
+            background-size: 10px !important;
+            background-position: center !important;
+            background-repeat: no-repeat !important;
+            border-radius: 50% !important;
+            width: 32px !important;
+            height: 32px !important;
+            border: none !important;
+            padding: 0 !important;
+            opacity: 1 !important;
+            filter: none !important; /* Forces disabling of Bootstrap 5 white-close invert filter */
+            transition: all 0.2s ease !important;
+            box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4) !important;
+            margin: 0 !important;
+        }
+
+        .modal-content .btn-close:hover,
+        .modal-header .btn-close:hover {
+            background-color: #dc2626 !important;
+            transform: scale(1.1) rotate(90deg) !important; /* Add slick micro-animation */
+            opacity: 1 !important;
+        }
+
+        .modal-header {
+            padding-left: 50px !important;
+        }
+
+
+        /* htmx transition styles */
+        .htmx-swapping {
+            opacity: 0.5;
+            transition: opacity 0.2s ease;
+        }
+        .htmx-settling {
+            opacity: 1;
+            transition: opacity 0.3s ease;
+        }
+
+        /* Ensure modals work correctly with htmx */
+        .modal-backdrop {
+            z-index: 1040 !important;
+        }
+        .modal {
+            z-index: 1050 !important;
+        }
+
+        /* Loading indicator for htmx requests */
+        .htmx-indicator {
+            display: none;
+        }
+        .htmx-request .htmx-indicator {
+            display: inline-block;
+        }
+
+
+        /* htmx layout fixes */
+        html, body {
+            height: 100%;
+            margin: 0;
+        }
+
+        /* Ensure sidebar stays fixed during htmx swaps */
+        .sidebar {
+            position: fixed !important;
+            right: 0;
+            top: 0;
+            height: 100vh;
+            z-index: 1000;
+        }
+
+        /* Content area adjustments (keep transition only) */
+        .content { transition: opacity 0.2s ease; }
+
+        /* Prevent content shift during swap */
+        .htmx-swapping .content {
+            opacity: 0.5;
+        }
+
+        /* Ensure body doesn't scroll horizontally */
+        body {
+            overflow-x: hidden;
+        }
+        input[type="date"]::-webkit-calendar-picker-indicator {
+            filter: invert(1);
+            cursor: pointer;
+        }
+
+</style>
+    {% block extra_css %}{% endblock %}
+    <script src="/static/js/htmx.min.js"></script>
+</head>
+<body>
+
+<!-- Flash Messages -->
+<div class="flash-messages">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }} alert-dismissible fade show shadow-lg" role="alert" style="border: none; border-radius: 12px;">
+                    <i class="fas fa-{% if category == 'success' %}check-circle{% elif category == 'danger' %}exclamation-circle{% elif category == 'warning' %}exclamation-triangle{% else %}info-circle{% endif %} me-2"></i>
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+</div>
+
+<button class="sidebar-toggle-btn" id="sidebarToggle" onclick="toggleSidebar()">
+    <i class="fas fa-bars"></i>
+</button>
+<div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
+
+<div class="sidebar" id="mainSidebar" hx-boost="false">
+    <div class="sidebar-header" style="padding: 20px 10px;">
+        <div class="clinic-logo-wrapper">
+            {% if logo_exists %}
+            <a href="/dashboard"><img src="/logo" alt="Muscle Station" style="max-width:220px;height:auto;border-radius:10px;"></a>
+            {% else %}
+            <div class="logo-main-box">
+                <div class="logo-graphics">
+                    <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="36" cy="24" r="7.5" fill="#ffffff" stroke="#111111" stroke-width="2" />
+                        <path d="M 36 33 C 32 46, 12 70, 24 82 C 34 82, 44 68, 54 48 C 58 40, 68 28, 76 16 C 66 18, 52 24, 36 33 Z" fill="#bd0f26" stroke="#111111" stroke-width="1.8" />
+                        <path d="M 23 58 C 18 64, 11 72, 13 78 C 18 78, 25 70, 29 62 C 26 62, 24 60, 23 58 Z" fill="#16a34a" stroke="#111111" stroke-width="1.2" />
+                        <path d="M 37 34 C 34 44, 27 56, 32 68 C 30 56, 34 46, 39 38 Z" fill="#ffffff" />
+                    </svg>
+                </div>
+                <div class="logo-text-box">
+                    <span class="text-muscle">MUSCLE</span>
+                    <span class="text-station">STATION</span>
+                </div>
+            </div>
+            <div class="logo-subtitle-ar">
+                <span>علاج طبيعي</span>
+                <span class="sep">•</span>
+                <span>تغذية علاجية</span>
+                <span class="sep">•</span>
+                <span>تأهيل الإصابات</span>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <nav class="sidebar-nav">
+        <div class="nav-section">
+            <div class="nav-section-title">القائمة الرئيسية</div>
+            {% if session.get('user_role') in ['admin', 'doctor'] %}
+            <a href="/dashboard" data-nav="/dashboard">
+                <i class="fas fa-chart-pie"></i> لوحة التحكم
+            </a>
+            {% endif %}
+            <a href="/reception" data-nav="/reception">
+                <i class="fas fa-user-injured"></i> الاستقبال
+            </a>
+            <a href="/daily_cases" data-nav="/daily_cases">
+                <i class="fas fa-file-medical-alt"></i> الحالات اليومية
+            </a>
+            <a href="/appointments" data-nav="/appointments">
+                <i class="fas fa-calendar-check"></i> جدول المواعيد
+            </a>
+            {% if session.get('user_role') in ['admin', 'doctor', 'receptionist'] %}
+            <a href="/treasury" data-nav="/treasury">
+                <i class="fas fa-coins"></i> الخزنة
+            </a>
+            {% endif %}
+        </div>
+
+        {% if session.get('user_role') in ['admin', 'doctor'] %}
+        <div class="nav-section">
+            <div class="nav-section-title">التقارير</div>
+            <a href="/reports" data-nav="/reports">
+                <i class="fas fa-file-invoice-dollar"></i> التقارير المالية
+            </a>
+        </div>
+        {% endif %}
+
+        {% if session.get('user_role') == 'admin' %}
+        <div class="nav-section">
+            <div class="nav-section-title">النظام</div>
+            <a href="/audit_log" data-nav="/audit_log">
+                <i class="fas fa-history"></i> سجل التتبع
+            </a>
+            <a href="/settings" data-nav="/settings">
+                <i class="fas fa-cog"></i> إعدادات النظام
+            </a>
+        </div>
+        {% endif %}
+    </nav>
+
+    <div class="sidebar-footer">
+        <div class="user-card">
+            <div class="user-avatar">
+                <i class="fas fa-user-md"></i>
+            </div>
+            <div class="user-info">
+                <div class="user-name">{{ session.get('user_name', 'دكتور') }}</div>
+                <div class="user-role">
+                    {% if session.get('user_role') == 'admin' %}
+                        مدير النظام
+                    {% elif session.get('user_role') == 'doctor' %}
+                        طبيب
+                    {% elif session.get('user_role') == 'receptionist' %}
+                        موظف استقبال
+                    {% else %}
+                        {{ session.get('user_role', 'طبيب') }}
+                    {% endif %}
+                </div>
+            </div>
+            <a href="/logout" class="text-danger" style="text-decoration: none;" title="خروج">
+                <i class="fas fa-sign-out-alt"></i>
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="content">
+    {% block content %}{% endblock %}
+</div>
+
+<script src="/static/js/bootstrap.bundle.min.js"></script>
+<script src="/static/js/chart.umd.min.js"></script>
+<script>
+    // إخفاء رسائل الفلاش تلقائياً
+    setTimeout(function() {
+        document.querySelectorAll('.alert').forEach(alert => {
+            new bootstrap.Alert(alert).close();
+        });
+    }, 5000);
+
+    // تأثيرات الدخول
+    document.addEventListener('DOMContentLoaded', function() {
+        document.querySelectorAll('.stat-card, .card').forEach((el, i) => {
+            el.style.animationDelay = `${i * 0.1}s`;
+            el.classList.add('animate-fade-in');
+        });
+    });
+</script>
+{% block extra_js %}{% endblock %}
+
+
+<script>
+    // htmx configuration
+    document.body.addEventListener('htmx:configRequest', function(evt) {
+        // Add CSRF token if available
+        // evt.detail.headers['X-CSRF-Token'] = document.querySelector('meta[name="csrf-token"]')?.content;
+    });
+
+    // Function to update active navigation based on current URL
+    function updateActiveNavigation() {
+        var currentPath = window.location.pathname;
+        document.querySelectorAll('.sidebar a').forEach(function(link) {
+            link.classList.remove('active-nav');
+            var navPath = link.getAttribute('data-nav') || link.getAttribute('href');
+            if (navPath && currentPath === navPath) {
+                link.classList.add('active-nav');
+            }
+        });
+    }
+
+    // Update on initial load
+    updateActiveNavigation();
+
+    // Update on htmx history restore (back/forward buttons)
+    document.body.addEventListener('htmx:historyRestore', function(evt) {
+        updateActiveNavigation();
+    });
+
+    // Handle history navigation
+    document.body.addEventListener('htmx:pushedIntoHistory', function(evt) {
+        console.log('Navigation:', evt.detail.path);
+    });
+
+    // Update active navigation and re-initialize components after htmx swap
+    document.body.addEventListener('htmx:afterSwap', function(evt) {
+        // Update active navigation in sidebar
+        var currentPath = window.location.pathname;
+        document.querySelectorAll('.sidebar a').forEach(function(link) {
+            link.classList.remove('active-nav');
+            var href = link.getAttribute('href');
+            if (href && currentPath === href) {
+                link.classList.add('active-nav');
+            }
+        });
+
+        // Re-initialize all dropdowns
+        var dropdowns = document.querySelectorAll('.dropdown-toggle');
+        dropdowns.forEach(function(dropdown) {
+            if (typeof bootstrap !== 'undefined') {
+                new bootstrap.Dropdown(dropdown);
+            }
+        });
+
+        // Re-initialize tooltips
+        var tooltips = document.querySelectorAll('[data-bs-toggle="tooltip"]');
+        tooltips.forEach(function(tooltip) {
+            if (typeof bootstrap !== 'undefined') {
+                new bootstrap.Tooltip(tooltip);
+            }
+        });
+
+        // Flash messages auto-dismiss
+        setTimeout(function() {
+            document.querySelectorAll('.alert').forEach(function(alert) {
+                if (typeof bootstrap !== 'undefined') {
+                    var bsAlert = bootstrap.Alert.getInstance(alert);
+                    if (bsAlert) bsAlert.close();
+                }
+            });
+        }, 5000);
+    });
+</script>
+<script>
+// ── Responsive Sidebar Toggle ──
+function toggleSidebar() {
+    var sidebar  = document.getElementById('mainSidebar');
+    var overlay  = document.getElementById('sidebarOverlay');
+    var btn      = document.getElementById('sidebarToggle');
+    var isOpen   = sidebar.classList.contains('open');
+    if (isOpen) {
+        sidebar.classList.remove('open');
+        overlay.classList.remove('active');
+        btn.innerHTML = '<i class="fas fa-bars"></i>';
+    } else {
+        sidebar.classList.add('open');
+        overlay.classList.add('active');
+        btn.innerHTML = '<i class="fas fa-times"></i>';
+    }
+}
+
+function closeSidebar() {
+    var sidebar = document.getElementById('mainSidebar');
+    var overlay = document.getElementById('sidebarOverlay');
+    var btn     = document.getElementById('sidebarToggle');
+    sidebar.classList.remove('open');
+    overlay.classList.remove('active');
+    btn.innerHTML = '<i class="fas fa-bars"></i>';
+}
+
+// Close sidebar on nav link click (mobile/tablet)
+document.querySelectorAll('.sidebar a').forEach(function(link) {
+    link.addEventListener('click', function() {
+        if (window.innerWidth < 992) closeSidebar();
+    });
+});
+
+// Auto-close on resize to desktop
+window.addEventListener('resize', function() {
+    if (window.innerWidth >= 992) {
+        document.getElementById('mainSidebar').classList.remove('open');
+        document.getElementById('sidebarOverlay').classList.remove('active');
+        document.getElementById('sidebarToggle').innerHTML = '<i class="fas fa-bars"></i>';
+    }
+});
+</script>
+
+</body>
+</html>

@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>تسجيل الدخول - نظام العيادة الاحترافي</title>
+<link href="/static/css/bootstrap.min.css" rel="stylesheet">
+<link href="/static/css/all.min.css" rel="stylesheet">
+<link href="/static/css/cairo-font.css" rel="stylesheet">
+<style>
+* { font-family: 'Cairo', sans-serif; }
+
+body {
+    background: linear-gradient(135deg, #0b1120 0%, #1e3a5f 50%, #0b1120 100%);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    overflow: hidden;
+}
+
+body::before {
+    content: '';
+    position: absolute;
+    width: 600px;
+    height: 600px;
+    background: radial-gradient(circle, rgba(14, 165, 233, 0.1) 0%, transparent 70%);
+    top: -200px;
+    right: -200px;
+}
+
+body::after {
+    content: '';
+    position: absolute;
+    width: 400px;
+    height: 400px;
+    background: radial-gradient(circle, rgba(139, 92, 246, 0.1) 0%, transparent 70%);
+    bottom: -100px;
+    left: -100px;
+}
+
+.login-container {
+    position: relative;
+    z-index: 10;
+    width: 100%;
+    max-width: 420px;
+    padding: 20px;
+}
+
+.login-card {
+    background: rgba(30, 41, 59, 0.95);
+    backdrop-filter: blur(20px);
+    border-radius: 24px;
+    border: 1px solid rgba(255,255,255,0.1);
+    padding: 45px 35px;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+    width: 100%;
+    box-sizing: border-box;
+}
+
+/* ─── High-Fidelity Muscle Station Brand Logo (Login Version) ─── */
+.clinic-logo-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    direction: ltr;
+    margin-bottom: 25px;
+    width: 100%;
+}
+
+.logo-main-box {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 2.5px solid #111111;
+    padding: 2px 12px;
+    position: relative;
+    background: #ffffff;
+    overflow: hidden;
+    width: 260px;
+    height: 60px;
+    border-radius: 12px;
+    box-shadow: 0 10px 25px rgba(0,0,0,0.4);
+}
+
+/* Background grid/staff lines similar to musical staff */
+.logo-main-box::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(rgba(0,0,0,0) 0%, rgba(0,0,0,0) 18%, #222 18%, #222 20%, rgba(0,0,0,0) 20%, rgba(0,0,0,0) 38%, #222 38%, #222 40%, rgba(0,0,0,0) 40%, rgba(0,0,0,0) 58%, #222 58%, #222 60%, rgba(0,0,0,0) 60%, rgba(0,0,0,0) 78%, #222 78%, #222 80%, rgba(0,0,0,0) 80%, rgba(0,0,0,0) 98%, #222 98%, #222 100%);
+    background-size: 100% 12px;
+    opacity: 0.22;
+    z-index: 1;
+    pointer-events: none;
+}
+
+.logo-graphics {
+    width: 44px;
+    height: 44px;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 5px;
+}
+
+.logo-graphics svg {
+    width: 100%;
+    height: 100%;
+}
+
+.logo-text-box {
+    display: flex;
+    align-items: center;
+    font-family: 'Arial Black', Impact, sans-serif;
+    z-index: 2;
+    gap: 2px;
+    margin-top: -3px;
+}
+
+.text-muscle {
+    color: #bd0f26; /* Deep solid red */
+    font-size: 1.7rem;
+    font-weight: 900;
+    letter-spacing: -1.2px;
+    text-transform: uppercase;
+}
+
+.text-station {
+    color: #ffffff; /* White fill with solid outline */
+    font-size: 1.7rem;
+    font-weight: 900;
+    letter-spacing: -1.2px;
+    text-transform: uppercase;
+    -webkit-text-stroke: 1.3px #111111;
+    text-shadow: 2px 2px 0px rgba(0,0,0,0.15);
+}
+
+/* Golden Arabic subtitle under the logo frame */
+.logo-subtitle-ar {
+    font-family: 'Cairo', sans-serif;
+    font-size: 0.65rem;
+    font-weight: 800;
+    color: #eab308; /* Gorgeous golden color */
+    -webkit-text-stroke: 0.25px #000000;
+    text-shadow: 1px 1px 1px rgba(0,0,0,0.9);
+    margin-top: 10px;
+    text-align: center;
+    direction: rtl;
+    width: 100%;
+    white-space: nowrap;
+    letter-spacing: 0.1px;
+}
+
+.logo-subtitle-ar span.sep {
+    color: #bd0f26;
+    margin: 0 4px;
+    font-size: 0.75rem;
+    -webkit-text-stroke: none;
+    text-shadow: none;
+}
+
+.login-title {
+    font-size: 1.6rem;
+    font-weight: 900;
+    color: #f8fafc;
+    text-align: center;
+    margin-bottom: 8px;
+}
+
+.login-subtitle {
+    color: #cbd5e1;
+    text-align: center;
+    font-size: 0.95rem;
+    margin-bottom: 30px;
+}
+
+.input-group {
+    margin-bottom: 20px;
+}
+
+.input-group-text {
+    background: rgba(15, 23, 42, 0.8) !important;
+    border: 1px solid #334155 !important;
+    border-left: none !important;
+    color: #cbd5e1;
+    padding: 12px 15px;
+    border-radius: 0 12px 12px 0 !important;
+}
+
+.form-control {
+    background: rgba(15, 23, 42, 0.8) !important;
+    border: 1px solid #334155 !important;
+    color: #f8fafc !important;
+    padding: 12px 15px;
+    border-radius: 12px 0 0 12px !important;
+    font-weight: 600;
+}
+
+.form-control:focus {
+    border-color: #0ea5e9 !important;
+    box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.15) !important;
+}
+
+.form-control::placeholder { color: #cbd5e1; }
+
+.btn-login {
+    width: 100%;
+    padding: 14px;
+    background: linear-gradient(135deg, #0ea5e9, #8b5cf6);
+    border: none;
+    border-radius: 12px;
+    color: white;
+    font-weight: 900;
+    font-size: 1.1rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    margin-top: 10px;
+}
+
+.btn-login:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 30px rgba(14, 165, 233, 0.3);
+}
+
+.system-info {
+    text-align: center;
+    margin-top: 25px;
+    padding-top: 20px;
+    border-top: 1px solid rgba(255,255,255,0.1);
+}
+
+.system-info p {
+    color: #cbd5e1;
+    font-size: 0.8rem;
+    margin: 0;
+}
+
+.system-info .version {
+    color: #0ea5e9;
+    font-weight: 700;
+}
+
+.alert {
+    border: none;
+    border-radius: 12px;
+    margin-bottom: 20px;
+}
+
+/* ── Responsive ── */
+@media (min-width: 1400px) {
+    .login-container { max-width: 460px; }
+    .logo-main-box { width: 290px; height: 68px; }
+    .text-muscle, .text-station { font-size: 1.9rem; }
+}
+@media (max-width: 480px) {
+    .login-container { padding: 12px; }
+    .login-card { padding: 30px 20px; border-radius: 18px; }
+    .logo-main-box { width: 230px; height: 54px; }
+    .text-muscle, .text-station { font-size: 1.5rem; }
+    .login-title { font-size: 1.3rem; }
+}
+</style>
+</head>
+
+<body>
+
+<div class="login-container">
+    <div class="login-card">
+        <div class="clinic-logo-wrapper">
+            {% if logo_exists %}
+            <img src="/logo" alt="Muscle Station" style="max-width:280px;height:auto;border-radius:10px;">
+            {% else %}
+            <div class="logo-main-box">
+                <div class="logo-graphics">
+                    <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                        <circle cx="36" cy="24" r="7.5" fill="#ffffff" stroke="#111111" stroke-width="2" />
+                        <path d="M 36 33 C 32 46, 12 70, 24 82 C 34 82, 44 68, 54 48 C 58 40, 68 28, 76 16 C 66 18, 52 24, 36 33 Z" fill="#bd0f26" stroke="#111111" stroke-width="1.8" />
+                        <path d="M 23 58 C 18 64, 11 72, 13 78 C 18 78, 25 70, 29 62 C 26 62, 24 60, 23 58 Z" fill="#16a34a" stroke="#111111" stroke-width="1.2" />
+                        <path d="M 37 34 C 34 44, 27 56, 32 68 C 30 56, 34 46, 39 38 Z" fill="#ffffff" />
+                    </svg>
+                </div>
+                <div class="logo-text-box">
+                    <span class="text-muscle">MUSCLE</span>
+                    <span class="text-station">STATION</span>
+                </div>
+            </div>
+            <div class="logo-subtitle-ar">
+                <span>علاج طبيعي</span>
+                <span class="sep">•</span>
+                <span>تغذية علاجية</span>
+                <span class="sep">•</span>
+                <span>تأهيل الإصابات والعمود الفقري</span>
+            </div>
+            {% endif %}
+        </div>
+        <h2 class="login-title">نظام إدارة العيادة</h2>
+        <p class="login-subtitle">أدخل بياناتك للوصول للنظام</p>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <form method="POST">
+            <div class="input-group">
+                <span class="input-group-text"><i class="fas fa-user"></i></span>
+                <input name="username" class="form-control text-end" placeholder="اسم المستخدم" required>
+            </div>
+            <div class="input-group">
+                <span class="input-group-text"><i class="fas fa-lock"></i></span>
+                <input name="password" type="password" class="form-control text-end" placeholder="كلمة المرور" required>
+            </div>
+            <button type="submit" class="btn-login">
+                <i class="fas fa-sign-in-alt"></i> تسجيل الدخول
+            </button>
+        </form>
+
+        <div class="system-info">
+            <p>الإصدار <span class="version">3.0 Professional</span></p>
+        </div>
+    </div>
+</div>
+
+<script src="/static/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

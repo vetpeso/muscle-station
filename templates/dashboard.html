@@ -1,0 +1,440 @@
+{% extends 'base.html' %}
+{% block title %}لوحة التحكم - نظام العيادة{% endblock %}
+
+{% block content %}
+
+<style>
+/* ══════════════════════════════════════
+   DASHBOARD PRO — MUSCLE STATION 2026
+══════════════════════════════════════ */
+
+/* ─── Hero ─── */
+.db-hero {
+    background: linear-gradient(135deg, rgba(14,165,233,.07) 0%, rgba(139,92,246,.07) 100%);
+    border: 1px solid rgba(255,255,255,.06);
+    border-radius: 20px;
+    padding: 18px 28px;
+    margin-bottom: 22px;
+    position: relative;
+    overflow: hidden;
+}
+.db-hero::after {
+    content:'';position:absolute;top:-60px;right:-60px;
+    width:260px;height:260px;
+    background:radial-gradient(circle,rgba(14,165,233,.12),transparent 70%);
+    animation:heroGlow 5s ease-in-out infinite;pointer-events:none;
+}
+@keyframes heroGlow { 0%,100%{opacity:.4;transform:scale(1)} 50%{opacity:.7;transform:scale(1.1)} }
+.welcome-text {
+    font-size:1.55rem;font-weight:900;
+    background:linear-gradient(135deg,#fff,#cbd5e1);
+    -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+}
+.live-clock {
+    background:rgba(15,23,42,.9);border:1px solid rgba(255,255,255,.08);
+    border-radius:14px;padding:10px 20px;text-align:center;position:relative;z-index:2;
+}
+.live-clock .time { font-size:1.35rem;font-weight:900;color:#0ea5e9;font-family:'Courier New',monospace;text-shadow:0 0 14px rgba(14,165,233,.4); }
+.live-clock .date { font-size:.75rem;color:#cbd5e1;font-weight:600; }
+
+/* ─── KPI Cards ─── */
+.kpi-card {
+    background:rgba(15,23,42,.7);
+    border:1px solid rgba(255,255,255,.07);
+    border-radius:18px;
+    padding:20px 22px;
+    position:relative;overflow:hidden;
+    transition:all .3s cubic-bezier(.4,0,.2,1);
+    width:100%; height:100%;
+    display:flex; flex-direction:column;
+    box-sizing:border-box;
+}
+.kpi-card::before { content:'';position:absolute;top:0;left:0;right:0;height:3px; }
+.kpi-card.kpi-blue::before   { background:linear-gradient(90deg,#0ea5e9,#38bdf8); }
+.kpi-card.kpi-green::before  { background:linear-gradient(90deg,#10b981,#34d399); }
+.kpi-card.kpi-orange::before { background:linear-gradient(90deg,#f59e0b,#fbbf24); }
+.kpi-card.kpi-purple::before { background:linear-gradient(90deg,#8b5cf6,#a78bfa); }
+.kpi-card.kpi-red::before    { background:linear-gradient(90deg,#ef4444,#f87171); }
+.kpi-card:hover { transform:translateY(-5px); box-shadow:0 18px 40px rgba(0,0,0,.35); border-color:rgba(255,255,255,.13); }
+.kpi-glow { position:absolute;top:-10px;right:10px;width:55px;height:55px;border-radius:50%;filter:blur(28px);opacity:.3;transition:opacity .3s; }
+.kpi-card:hover .kpi-glow { opacity:.55; }
+.kpi-icon { width:46px;height:46px;border-radius:13px;display:flex;align-items:center;justify-content:center;font-size:1.25rem;margin-bottom:12px;position:relative;z-index:2;transition:transform .3s; }
+.kpi-card:hover .kpi-icon { transform:scale(1.1) rotate(-5deg); }
+.kpi-val { font-size:2rem;font-weight:900;color:#fff;line-height:1;margin-bottom:4px; }
+.kpi-lbl { font-size:.82rem;color:#cbd5e1;font-weight:600; }
+.kpi-badge {
+    display:inline-flex;align-items:center;gap:4px;
+    font-size:.72rem;font-weight:700;padding:3px 9px;border-radius:20px;margin-top:8px;
+}
+.kb-up   { background:rgba(16,185,129,.12);color:#10b981; }
+.kb-down { background:rgba(239,68,68,.12);color:#ef4444; }
+.kb-info { background:rgba(14,165,233,.12);color:#0ea5e9; }
+.kb-warn { background:rgba(245,158,11,.12);color:#f59e0b; }
+
+/* ─── Collection Ring ─── */
+.ring-wrap { position:relative;width:72px;height:72px;flex-shrink:0; }
+.ring-wrap svg { transform:rotate(-90deg); }
+.ring-bg  { fill:none;stroke:rgba(255,255,255,.06);stroke-width:7; }
+.ring-arc { fill:none;stroke-width:7;stroke-linecap:round;stroke-dasharray:201;transition:stroke-dashoffset 1.4s cubic-bezier(.4,0,.2,1); }
+.ring-txt { position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:.82rem;color:#fff; }
+
+/* ─── Section headers ─── */
+.sec-hdr { display:flex;align-items:center;gap:10px;padding:18px 20px 10px; }
+.sec-ico { width:34px;height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:.95rem; }
+.sec-ttl { font-weight:900;font-size:1rem;color:#f1f5f9; }
+
+/* ─── Visit rows ─── */
+.vrow {
+    display:flex;align-items:center;gap:12px;
+    padding:10px 16px;border-radius:12px;
+    background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.04);
+    margin-bottom:7px;transition:all .22s;
+}
+.vrow:hover { background:rgba(14,165,233,.06);border-color:rgba(14,165,233,.18);transform:translateX(-3px); }
+.vava { width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:1.1rem;flex-shrink:0;box-shadow:0 2px 6px rgba(0,0,0,.15);border:1px solid rgba(255,255,255,.05); }
+.vava.male { background:linear-gradient(135deg,#3b82f6,#1d4ed8); }
+.vava.female { background:linear-gradient(135deg,#ec4899,#be185d); }
+.vname { font-weight:700;color:#f1f5f9;font-size:.9rem; }
+.vmeta { font-size:.73rem;color:#cbd5e1;margin-top:2px; }
+.vcost { font-weight:900;font-size:.95rem;color:#f59e0b;white-space:nowrap;text-align:left; }
+.vpill {
+    padding:2px 9px;border-radius:20px;font-size:.68rem;font-weight:700;display:inline-block;
+    white-space:nowrap;
+}
+.vp-paid   { background:rgba(16,185,129,.15);color:#10b981; }
+.vp-unpaid { background:rgba(239,68,68,.15);color:#ef4444; }
+.vp-pkg    { background:rgba(99,102,241,.15);color:#6366f1; }
+
+/* ─── Insight rows ─── */
+.irow {
+    display:flex;align-items:center;gap:12px;
+    padding:12px 14px;border-radius:12px;
+    background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.04);
+    transition:all .2s;
+}
+.irow:hover { background:rgba(255,255,255,.04); }
+.iico { width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0; }
+.itxt-top { font-size:.72rem;color:#cbd5e1;font-weight:600; }
+.itxt-bot { font-size:.9rem;font-weight:800;color:#f1f5f9; }
+.ival { font-weight:900;font-size:1.2rem;color:#fff; }
+
+/* ─── Animations ─── */
+@keyframes slideUp { from{opacity:0;transform:translateY(28px)} to{opacity:1;transform:translateY(0)} }
+.anim { animation:slideUp .55s ease forwards;opacity:0; }
+@keyframes cntUp { from{opacity:0;transform:scale(.6)} to{opacity:1;transform:scale(1)} }
+.cntUp { animation:cntUp .7s ease forwards; }
+
+/* ─── FAB ─── */
+.fab-menu { position:fixed;bottom:28px;left:28px;z-index:1000; }
+.fab-main {
+    width:58px;height:58px;border-radius:50%;
+    background:linear-gradient(135deg,#0ea5e9,#8b5cf6);
+    border:none;color:white;font-size:1.4rem;cursor:pointer;
+    box-shadow:0 8px 25px rgba(14,165,233,.4);transition:all .3s;
+    display:flex;align-items:center;justify-content:center;
+}
+.fab-main:hover { transform:scale(1.1) rotate(45deg); }
+.fab-items { position:absolute;bottom:68px;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;gap:10px;opacity:0;pointer-events:none;transition:all .3s; }
+.fab-menu:hover .fab-items { opacity:1;pointer-events:all;bottom:72px; }
+.fab-item { width:46px;height:46px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:white;text-decoration:none;font-size:1.05rem;transition:all .3s;box-shadow:0 4px 14px rgba(0,0,0,.3); }
+.fab-item:hover { transform:scale(1.15); color:white; }
+
+/* ─── Responsive overrides ─── */
+@media (max-width: 991px) {
+    .kpi-val { font-size: 1.6rem; }
+    .kpi-card { padding: 15px 16px; }
+    .kpi-icon { width: 40px; height: 40px; font-size: 1.1rem; margin-bottom: 8px; }
+    .db-hero { padding: 14px 18px; }
+    .welcome-text { font-size: 1.25rem; }
+}
+@media (max-width: 767px) {
+    .kpi-val { font-size: 1.4rem; }
+    .kpi-card { padding: 12px 14px; border-radius: 14px; }
+    .kpi-lbl { font-size: .75rem; }
+    .kpi-badge { font-size: .65rem; padding: 2px 7px; }
+    .db-hero { padding: 12px 14px; margin-bottom: 16px; }
+    .welcome-text { font-size: 1.1rem; }
+    .live-clock .time { font-size: 1.1rem; }
+    .fab-menu { bottom: 16px; left: 16px; }
+    .fab-main { width: 50px; height: 50px; font-size: 1.2rem; }
+}
+@media (max-width: 575px) {
+    .kpi-val { font-size: 1.25rem; }
+    .kpi-icon { width: 34px; height: 34px; font-size: .95rem; }
+}
+
+/* ─── Scroll ─── */
+.cscroll::-webkit-scrollbar { width:5px; }
+.cscroll::-webkit-scrollbar-track { background:transparent; }
+.cscroll::-webkit-scrollbar-thumb { background:rgba(255,255,255,.1);border-radius:3px; }
+    /* Responsive fixes */
+    @media (max-width: 991px) {
+        .col-xl-3.col-lg-3 { flex: 0 0 50%; max-width: 50%; }
+    }
+    @media (max-width: 575px) {
+        .col-xl-3.col-lg-3 { flex: 0 0 100%; max-width: 100%; }
+        .kpi-val { font-size: 1.6rem; }
+        .welcome-text { font-size: 1.2rem; }
+        .col-lg-8, .col-lg-4 { flex: 0 0 100%; max-width: 100%; }
+    }
+    @media (min-width: 992px) {
+        .col-xl-3.col-lg-3 { flex: 0 0 25%; max-width: 25%; }
+        .col-lg-8 { flex: 0 0 66.666%; max-width: 66.666%; }
+        .col-lg-4 { flex: 0 0 33.333%; max-width: 33.333%; }
+    }
+</style>
+
+<!-- ══ HERO ══ -->
+<div class="db-hero anim" style="animation-delay:.0s">
+    <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+        <div style="position:relative;z-index:2;">
+            <h1 class="welcome-text">أهلاً بك، <span style="color:#0ea5e9;">{{ user_name }}</span></h1>
+            <p style="color:#cbd5e1;font-size:.9rem;margin:4px 0 0;">إليك نظرة عامة على أداء العيادة اليوم</p>
+        </div>
+        <div class="live-clock" style="position:relative;z-index:2;">
+            <div class="date" id="live-date">---</div>
+            <div class="time" id="live-time">00:00:00</div>
+        </div>
+    </div>
+</div>
+
+<!-- ══ KPI ROW ══ -->
+<div class="row g-3 mb-4">
+
+    <!-- المرضى -->
+    <div class="col-xl-3 col-lg-3 col-md-6 col-6 anim" style="animation-delay:.08s">
+        <div class="kpi-card kpi-blue">
+            <div class="kpi-glow" style="background:#0ea5e9;"></div>
+            <div class="kpi-icon" style="background:rgba(14,165,233,.15);color:#0ea5e9;"><i class="fas fa-users"></i></div>
+            <div class="kpi-val cntUp">{{ patients_count }}</div>
+            <div class="kpi-lbl">المرضى المسجلين</div>
+            <div class="kpi-badge kb-up"><i class="fas fa-arrow-up"></i> نشط</div>
+        </div>
+    </div>
+
+    <!-- زيارات اليوم -->
+    <div class="col-xl-3 col-lg-3 col-md-6 col-6 anim" style="animation-delay:.15s">
+        <div class="kpi-card kpi-green">
+            <div class="kpi-glow" style="background:#10b981;"></div>
+            <div class="kpi-icon" style="background:rgba(16,185,129,.15);color:#10b981;"><i class="fas fa-stethoscope"></i></div>
+            <div class="kpi-val cntUp">{{ today_visits }}</div>
+            <div class="kpi-lbl">زيارات اليوم</div>
+            <div class="kpi-badge kb-up"><i class="fas fa-circle" style="font-size:.45rem;"></i> جارية</div>
+        </div>
+    </div>
+
+    {% if session.get('user_role') == 'admin' %}
+    <!-- إيرادات اليوم -->
+    <div class="col-xl-3 col-lg-3 col-md-6 col-6 anim" style="animation-delay:.22s">
+        <div class="kpi-card kpi-orange">
+            <div class="kpi-glow" style="background:#f59e0b;"></div>
+            <div class="kpi-icon" style="background:rgba(245,158,11,.15);color:#f59e0b;"><i class="fas fa-coins"></i></div>
+            <div class="kpi-val cntUp" id="kv-today">{{ "{:,.0f}".format(today_income) }}</div>
+            <div class="kpi-lbl">إيرادات اليوم</div>
+            <div class="kpi-badge kb-warn"><i class="fas fa-arrow-up"></i> {{ settings['currency'] if settings else 'ج.م' }}</div>
+        </div>
+    </div>
+
+    <!-- إيرادات الشهر -->
+    <div class="col-xl-3 col-lg-3 col-md-6 col-6 anim" style="animation-delay:.29s">
+        <div class="kpi-card kpi-purple">
+            <div class="kpi-glow" style="background:#8b5cf6;"></div>
+            <div class="kpi-icon" style="background:rgba(139,92,246,.15);color:#8b5cf6;"><i class="fas fa-chart-bar"></i></div>
+            <div class="kpi-val cntUp" id="kv-month">{{ "{:,.0f}".format(monthly_income) }}</div>
+            <div class="kpi-lbl">إيرادات الشهر</div>
+            <div class="kpi-badge kb-info"><i class="fas fa-arrow-up"></i> {{ settings['currency'] if settings else 'ج.م' }}</div>
+        </div>
+    </div>
+    {% else %}
+    <div class="col-xl-3 col-lg-3 col-md-6 col-6 anim" style="animation-delay:.22s">
+        <div class="kpi-card kpi-orange">
+            <div class="kpi-glow" style="background:#f59e0b;"></div>
+            <div class="kpi-icon" style="background:rgba(245,158,11,.15);color:#f59e0b;"><i class="fas fa-history"></i></div>
+            <div class="kpi-val cntUp">{{ total_visits_all }}</div>
+            <div class="kpi-lbl">الزيارات الكلية</div>
+            <div class="kpi-badge kb-info"><i class="fas fa-list"></i> إجمالي</div>
+        </div>
+    </div>
+    <div class="col-xl-3 col-lg-3 col-md-6 col-6 anim" style="animation-delay:.29s">
+        <div class="kpi-card kpi-purple">
+            <div class="kpi-glow" style="background:#8b5cf6;"></div>
+            <div class="kpi-icon" style="background:rgba(139,92,246,.15);color:#8b5cf6;"><i class="fas fa-user-plus"></i></div>
+            <div class="kpi-val cntUp">{{ new_patients }}</div>
+            <div class="kpi-lbl">المرضى الجدد للشهر</div>
+            <div class="kpi-badge kb-up"><i class="fas fa-arrow-up"></i> هذا الشهر</div>
+        </div>
+    </div>
+    {% endif %}
+
+</div>
+
+<!-- ══ BOTTOM ROW ══ -->
+<div class="row g-4">
+
+    <!-- آخر الزيارات -->
+    <div class="col-lg-8 col-md-12 anim" style="animation-delay:.35s">
+        <div style="background:rgba(15,23,42,.7);border:1px solid rgba(255,255,255,.07);border-radius:18px;height:100%;">
+            <div class="sec-hdr" style="border-bottom:1px solid rgba(255,255,255,.05);margin-bottom:0;">
+                <div class="sec-ico" style="background:rgba(14,165,233,.12);color:#0ea5e9;"><i class="fas fa-clock-rotate-left"></i></div>
+                <h5 class="sec-ttl">آخر الزيارات</h5>
+                <a href="/daily_cases" class="ms-auto" style="background:rgba(14,165,233,.1);color:#0ea5e9;border:1px solid rgba(14,165,233,.2);border-radius:9px;font-size:.78rem;font-weight:700;padding:5px 12px;text-decoration:none;">
+                    الكل <i class="fas fa-arrow-left ms-1"></i>
+                </a>
+            </div>
+            <div class="p-3 cscroll" style="max-height:360px;overflow-y:auto;">
+                {% for visit in recent_visits %}
+                <div class="vrow">
+                    {% if visit[5] == 'أنثى' %}
+                    <div class="vava female" title="أنثى"><i class="fas fa-female"></i></div>
+                    {% else %}
+                    <div class="vava male" title="ذكر"><i class="fas fa-male"></i></div>
+                    {% endif %}
+                    <div class="visit-info" style="flex:1;min-width:0;">
+                        <div class="vname">{{ visit[0] }}</div>
+                        <div class="vmeta">
+                            <i class="fas fa-calendar-alt" style="color:#0ea5e9;"></i> {{ visit[2] }}
+                            {% if visit[3] %}
+                            <span class="mx-1" style="opacity:.4;">|</span>
+                            <i class="fas fa-tag" style="color:#8b5cf6;"></i> {{ visit[3] }}
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0;">
+                        {% if session.get('user_role') == 'admin' %}
+                        <div class="vcost">{{ "{:,.0f}".format(visit[1]) }} {{ settings['currency'] if settings else 'ج.م' }}</div>
+                        {% endif %}
+                        {% if visit[4] == 'مدفوع' %}
+                            <span class="vpill vp-paid"><i class="fas fa-check-circle me-1"></i>مدفوع</span>
+                        {% elif visit[4] == 'خصم من الباقة' %}
+                            <span class="vpill vp-pkg"><i class="fas fa-box me-1"></i>باقة</span>
+                        {% else %}
+                            <span class="vpill vp-unpaid"><i class="fas fa-clock me-1"></i>متبقي</span>
+                        {% endif %}
+                    </div>
+                </div>
+                {% else %}
+                <div style="text-align:center;padding:50px 20px;color:#cbd5e1;">
+                    <i class="fas fa-inbox" style="font-size:3rem;display:block;margin-bottom:12px;opacity:.3;"></i>
+                    <div style="font-weight:700;">لا توجد زيارات مسجلة</div>
+                    <div class="small mt-1">سجل أول زيارة من صفحة الاستقبال</div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <!-- مؤشرات الأداء -->
+    <div class="col-lg-4 col-md-12 anim" style="animation-delay:.42s">
+        <div style="background:rgba(15,23,42,.7);border:1px solid rgba(255,255,255,.07);border-radius:18px;height:100%;padding:20px;">
+
+            <div class="sec-hdr" style="padding:0;margin-bottom:18px;">
+                <div class="sec-ico" style="background:rgba(139,92,246,.12);color:#8b5cf6;"><i class="fas fa-chart-line"></i></div>
+                <h5 class="sec-ttl">مؤشرات الأداء</h5>
+            </div>
+
+            <div class="d-flex flex-column gap-3">
+
+                <!-- الزيارات الكلية -->
+                <div class="irow">
+                    <div class="iico" style="background:rgba(14,165,233,.1);color:#0ea5e9;"><i class="fas fa-calendar-check"></i></div>
+                    <div style="flex:1;min-width:0;">
+                        <div class="itxt-top">إجمالي الحالات والزيارات</div>
+                        <div class="itxt-bot">الزيارات الكلية للعيادة</div>
+                    </div>
+                    <div class="ival">{{ total_visits_all }}</div>
+                </div>
+
+                <!-- المرضى الجدد -->
+                <div class="irow">
+                    <div class="iico" style="background:rgba(16,185,129,.1);color:#10b981;"><i class="fas fa-user-plus"></i></div>
+                    <div style="flex:1;min-width:0;">
+                        <div class="itxt-top">المرضى الجدد هذا الشهر</div>
+                        <div class="itxt-bot">مسجلين جدد</div>
+                    </div>
+                    <div class="ival">{{ new_patients }}</div>
+                </div>
+
+                {% if session.get('user_role') == 'admin' %}
+                <!-- مديونيات -->
+                <div class="irow">
+                    <div class="iico" style="background:rgba(239,68,68,.1);color:#ef4444;"><i class="fas fa-exclamation-circle"></i></div>
+                    <div style="flex:1;min-width:0;">
+                        <div class="itxt-top">مستحقات معلقة</div>
+                        <div class="itxt-bot">الزيارات غير المدفوعة</div>
+                    </div>
+                    <div style="text-align:left;">
+                        <div class="ival" style="color:#ef4444;line-height:1;">{{ unpaid_count }}</div>
+                        <div style="font-size:.68rem;color:#cbd5e1;margin-top:2px;">{{ "{:,.0f}".format(unpaid_amount) }} {{ settings['currency'] if settings else 'ج.م' }}</div>
+                    </div>
+                </div>
+
+                <!-- نسبة التحصيل -->
+                {% if monthly_income > 0 %}
+                <div class="irow" style="align-items:center;">
+                    <div class="iico" style="background:rgba(16,185,129,.1);color:#10b981;"><i class="fas fa-percent"></i></div>
+                    <div style="flex:1;min-width:0;">
+                        <div class="itxt-top">هذا الشهر</div>
+                        <div class="itxt-bot">نسبة التحصيل</div>
+                        <div style="height:5px;background:rgba(255,255,255,.07);border-radius:3px;margin-top:6px;overflow:hidden;">
+                            <div id="collect-bar" style="height:100%;border-radius:3px;background:linear-gradient(90deg,#10b981,#0ea5e9);width:0%;transition:width 1.2s ease;"></div>
+                        </div>
+                    </div>
+                    <div class="ring-wrap ms-2">
+                        <svg viewBox="0 0 72 72" width="72" height="72">
+                            <circle class="ring-bg" cx="36" cy="36" r="32"/>
+                            <circle class="ring-arc" id="ring-arc" cx="36" cy="36" r="32" stroke="#10b981"
+                                    stroke-dashoffset="{{ 201 - (201 * [[monthly_income - unpaid_amount, 0]|max / monthly_income * 100|int, 100]|min / 100) | int }}"/>
+                        </svg>
+                        <div class="ring-txt" id="ring-pct">
+                            {{ [[((monthly_income - unpaid_amount) / monthly_income * 100)|round(0)|int, 0]|max, 100]|min }}%
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+                {% endif %}
+
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<!-- FAB -->
+<div class="fab-menu">
+    <div class="fab-items">
+        <a href="/reception" class="fab-item" style="background:linear-gradient(135deg,#10b981,#059669);" title="استقبال مريض">
+            <i class="fas fa-user-plus"></i>
+        </a>
+        {% if session.get('user_role') == 'admin' %}
+        <a href="/reports" class="fab-item" style="background:linear-gradient(135deg,#f59e0b,#d97706);" title="تقرير مالي">
+            <i class="fas fa-file-alt"></i>
+        </a>
+        {% endif %}
+    </div>
+    <button class="fab-main"><i class="fas fa-plus"></i></button>
+</div>
+
+<script>
+// ─── Live Clock ───
+function updateClock() {
+    const now = new Date();
+    document.getElementById('live-date').innerText = now.toLocaleDateString('ar-EG', {weekday:'long',year:'numeric',month:'long',day:'numeric'});
+    document.getElementById('live-time').innerText = now.toLocaleTimeString('en-US', {hour12:false});
+}
+setInterval(updateClock, 1000);
+updateClock();
+
+// ─── Animate on load ───
+document.addEventListener('DOMContentLoaded', function() {
+    // Collection progress bar
+    const bar = document.getElementById('collect-bar');
+    if (bar) {
+        const monthly = {{ monthly_income | default(0) }};
+        const unpaid  = {{ unpaid_amount | default(0) }};
+        const pct = monthly > 0 ? Math.min(Math.round((monthly - unpaid) / monthly * 100), 100) : 0;
+        setTimeout(() => { bar.style.width = pct + '%'; }, 300);
+    }
+});
+</script>
+
+{% endblock %}

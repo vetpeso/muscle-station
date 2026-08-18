@@ -1,0 +1,2561 @@
+{% extends 'base.html' %}
+{% block title %}ملف المريض: {{ patient['name'] }}{% endblock %}
+
+{% block content %}
+
+<style>
+    .text-muted { color: #94a3b8 !important; }
+    .small, small { color: #94a3b8 !important; }
+    .info-section strong, .timeline-content strong { color: #f8fafc !important; }
+    .visit-card, .visit-card-body {
+        color: #e2e8f0 !important;
+    }
+    .modal-content {
+        color: #e2e8f0 !important;
+    }
+    .modal-content .text-muted {
+        color: #e2e8f0 !important;
+    }
+    .form-label {
+        color: #e2e8f0 !important;
+        font-weight: 600;
+        text-shadow: 0 0 3px rgba(226, 232, 240, 0.1);
+    }
+
+    .profile-header {
+        background: linear-gradient(135deg, rgba(30,41,59,0.98), rgba(30,41,59,0.85));
+        backdrop-filter: blur(12px);
+        border-radius: 24px;
+        padding: 40px 40px;
+        border: 1px solid var(--border-color);
+        margin-bottom: 30px;
+        position: relative;
+        overflow: hidden;
+        box-shadow: 0 8px 40px rgba(0,0,0,0.3);
+        width: 100%;
+        box-sizing: border-box;
+    }
+
+    .profile-header::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        right: 0;
+        width: 8px;
+        height: 100%;
+        background: linear-gradient(to bottom, var(--accent-blue), var(--accent-purple), var(--accent-green));
+        box-shadow: 0 0 20px rgba(56,189,248,0.3);
+    }
+
+    .profile-header::after {
+        content: '';
+        position: absolute;
+        top: -50%;
+        left: -20%;
+        width: 500px;
+        height: 500px;
+        background: radial-gradient(circle, rgba(56,189,248,0.04), transparent 70%);
+        pointer-events: none;
+    }
+
+    .profile-avatar {
+        width: 72px;
+        height: 72px;
+        border-radius: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 2rem;
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+        flex-shrink: 0;
+        border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+    .profile-avatar.male {
+        background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+        box-shadow: 0 8px 30px rgba(59, 130, 246, 0.3);
+    }
+    .profile-avatar.male:hover {
+        transform: scale(1.05);
+        box-shadow: 0 12px 40px rgba(59, 130, 246, 0.4);
+    }
+    .profile-avatar.female {
+        background: linear-gradient(135deg, #ec4899, #be185d);
+        box-shadow: 0 8px 30px rgba(236, 72, 153, 0.3);
+    }
+    .profile-avatar.female:hover {
+        transform: scale(1.05);
+        box-shadow: 0 12px 40px rgba(236, 72, 153, 0.4);
+    }
+
+    .profile-name {
+        font-size: 2rem;
+        font-weight: 900;
+        color: #f8fafc;
+        margin-bottom: 4px;
+        text-shadow: 0 0 20px rgba(248,250,252,0.08);
+    }
+
+    .profile-meta {
+        color: #94a3b8;
+        font-size: 0.95rem;
+    }
+
+    .profile-badge {
+        padding: 6px 16px;
+        border-radius: 20px;
+        font-size: 0.85rem;
+        font-weight: 700;
+        background: rgba(16,185,129,0.1) !important;
+        border: 1px solid rgba(16,185,129,0.2);
+        color: #34d399 !important;
+    }
+
+    .info-section {
+        background: rgba(30,41,59,0.95);
+        backdrop-filter: blur(12px);
+        border-radius: 20px;
+        border: 1px solid var(--border-color);
+        overflow: hidden;
+        margin-bottom: 28px;
+        width: 100%;
+        box-sizing: border-box;
+        box-shadow: 0 8px 40px rgba(0,0,0,0.25);
+        transition: box-shadow 0.3s ease;
+    }
+    .info-section:hover {
+        box-shadow: 0 12px 50px rgba(0,0,0,0.35);
+    }
+
+    .info-section-header {
+        padding: 20px 28px;
+        border-bottom: 1px solid var(--border-color);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background: linear-gradient(135deg, rgba(56,189,248,0.08), rgba(99,102,241,0.04));
+    }
+
+    .info-section-title {
+        font-weight: 900;
+        font-size: 1.15rem;
+        color: #38bdf8;
+        margin: 0;
+        text-shadow: 0 0 10px rgba(56,189,248,0.15);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .info-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+        gap: 0;
+        width: 100%;
+        box-sizing: border-box;
+    }
+
+    .info-item {
+        padding: 16px 22px;
+        border-bottom: 1px solid rgba(148,163,184,0.08);
+        border-left: 1px solid rgba(148,163,184,0.08);
+        transition: all 0.25s ease;
+        position: relative;
+        display: flex;
+        align-items: center;
+        gap: 14px;
+    }
+    .info-item:hover {
+        background: linear-gradient(135deg, rgba(56,189,248,0.06), rgba(99,102,241,0.03));
+        transform: translateY(-1px);
+    }
+    .info-item::before {
+        content: '';
+        position: absolute;
+        right: 0;
+        top: 50%;
+        transform: translateY(-50%);
+        width: 3px;
+        height: 0;
+        background: linear-gradient(180deg, #38bdf8, #818cf8);
+        border-radius: 0 3px 3px 0;
+        transition: height 0.3s ease;
+    }
+    .info-item:hover::before {
+        height: 60%;
+    }
+    .info-item:last-child {
+        border-bottom: none;
+    }
+
+    .info-item-icon {
+        width: 38px;
+        height: 38px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 10px;
+        background: rgba(56,189,248,0.08);
+        color: #38bdf8;
+        font-size: 0.95rem;
+        flex-shrink: 0;
+        transition: all 0.3s ease;
+    }
+    .info-item:hover .info-item-icon {
+        background: rgba(56,189,248,0.15);
+        transform: scale(1.1);
+    }
+
+    .info-item-body {
+        flex: 1;
+        min-width: 0;
+    }
+
+    .info-label {
+        font-size: 0.65rem;
+        color: #94a3b8;
+        letter-spacing: 0.5px;
+        text-transform: uppercase;
+        margin-bottom: 2px;
+        display: block;
+        font-weight: 700;
+    }
+
+    .info-value {
+        font-weight: 700;
+        color: #f1f5f9;
+        font-size: 0.95rem;
+        display: block;
+        line-height: 1.4;
+    }
+
+    .info-value.danger { color: #f87171; }
+    .info-value.warning { color: #fbbf24; }
+    .info-value.success { color: #34d399; }
+
+    .visit-card {
+        background: rgba(30,41,59,0.95);
+        backdrop-filter: blur(8px);
+        border-radius: 20px;
+        border: 1px solid var(--border-color);
+        margin-bottom: 24px;
+        overflow: hidden;
+        box-shadow: 0 4px 30px rgba(0,0,0,0.2);
+        transition: all 0.3s ease;
+        position: relative;
+        width: 100%;
+        box-sizing: border-box;
+    }
+    .visit-card:hover {
+        box-shadow: 0 8px 50px rgba(0,0,0,0.35);
+        transform: translateY(-2px);
+        border-color: var(--accent-blue);
+    }
+    .visit-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        right: 0;
+        width: 6px;
+        height: 100%;
+        background: linear-gradient(to bottom, var(--accent-blue), var(--accent-purple));
+        opacity: 1;
+    }
+
+    .visit-children {
+        margin-right: 24px;
+        margin-top: -12px;
+        margin-bottom: 8px;
+        padding-right: 16px;
+        border-right: 2px solid rgba(148,163,184,0.12);
+    }
+    .visit-child-card {
+        background: rgba(30,41,59,0.75);
+        border-radius: 16px;
+        border: 1px solid rgba(148,163,184,0.06);
+        margin-bottom: 12px;
+        overflow: hidden;
+        box-shadow: 0 2px 12px rgba(0,0,0,0.1);
+        transition: all 0.2s ease;
+    }
+    .visit-child-card:hover {
+        border-color: rgba(16,185,129,0.2);
+        box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+    }
+    .visit-child-card .visit-card-header {
+        padding: 10px 14px 10px 14px;
+    }
+    .visit-child-card .visit-card-body {
+        padding: 0 14px 10px 14px;
+    }
+    .visit-child-card .visit-card-actions {
+        padding: 0 14px 12px 14px;
+    }
+    .visit-child-card .visit-fin-row {
+        gap: 8px;
+    }
+    .visit-child-card .visit-fin-item {
+        font-size: 0.78rem;
+        padding: 3px 10px;
+    }
+    .visit-child-card .visit-fin-item .value {
+        font-size: 0.82rem;
+    }
+
+    .visit-toggle {
+        transition: transform 0.3s ease;
+        flex-shrink: 0;
+        font-size: 0.95rem !important;
+        color: #94a3b8 !important;
+        width: 28px; height: 28px;
+        display: inline-flex !important; align-items: center; justify-content: center;
+        border-radius: 8px;
+        background: rgba(148,163,184,0.08);
+    }
+    .visit-toggle:hover {
+        background: rgba(148,163,184,0.18);
+        color: #cbd5e1 !important;
+    }
+    .visit-toggle.collapsed {
+        transform: rotate(-90deg);
+    }
+    .visit-card-collapse {
+        overflow: hidden;
+        transition: max-height 0.4s ease, opacity 0.3s ease;
+        max-height: 2000px;
+        opacity: 1;
+    }
+    .visit-card-collapse.closed {
+        max-height: 0;
+        opacity: 0;
+    }
+
+    .visit-card-header {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 16px 22px;
+        background: linear-gradient(135deg, rgba(56,189,248,0.04), rgba(99,102,241,0.02));
+        border-bottom: 1px solid var(--border-color);
+        flex-wrap: wrap;
+        width: 100%;
+        box-sizing: border-box;
+    }
+
+    .visit-card-date {
+        color: #a78bfa;
+        font-weight: 900;
+        font-size: 0.9rem;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        white-space: nowrap;
+    }
+    .visit-card-date i {
+        font-size: 0.7rem;
+        color: #a78bfa;
+    }
+
+    .visit-hdr-sep {
+        color: #475569;
+        font-size: 0.7rem;
+        font-weight: 300;
+    }
+
+    .visit-card-type {
+        font-size: 0.7rem;
+        padding: 4px 12px;
+        border-radius: 20px;
+        font-weight: 700;
+        letter-spacing: 0.3px;
+        white-space: nowrap;
+        border: 1px solid transparent;
+    }
+
+    .visit-hdr-badge {
+        font-size: 0.65rem;
+        padding: 3px 10px;
+        border-radius: 6px;
+        font-weight: 600;
+        white-space: nowrap;
+    }
+
+    .visit-day-badge {
+        font-size: 0.6rem;
+        padding: 2px 8px;
+        border-radius: 3px;
+        background: rgba(167,139,250,0.12);
+        color: #a78bfa;
+        font-weight: 800;
+        letter-spacing: 0.3px;
+        white-space: nowrap;
+        border: 1px solid rgba(167,139,250,0.15);
+    }
+
+    .visit-card-time {
+        font-size: 0.7rem;
+        color: #c4b5fd;
+        font-weight: 700;
+        display: inline-flex;
+        align-items: center;
+        gap: 3px;
+        white-space: nowrap;
+        background: rgba(148,163,184,0.1);
+        padding: 1px 6px;
+        border-radius: 3px;
+    }
+    .visit-card-time i {
+        font-size: 0.65rem;
+        color: #a78bfa;
+    }
+
+
+    .visit-card-body {
+        padding: 20px 24px;
+        width: 100%;
+        box-sizing: border-box;
+        background: rgba(15,23,42,0.2);
+    }
+
+    .visit-fin-row {
+        display: flex;
+        gap: 20px;
+        flex-wrap: wrap;
+        margin-bottom: 14px;
+        padding-bottom: 14px;
+        border-bottom: 1px solid rgba(148,163,184,0.06);
+    }
+
+    .visit-fin-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 14px;
+        background: rgba(15,23,42,0.4);
+        border-radius: 10px;
+        border: 1px solid var(--border-color);
+        font-size: 0.85rem;
+        transition: all 0.2s ease;
+    }
+    .visit-fin-item:hover {
+        border-color: rgba(148,163,184,0.35);
+        background: rgba(15,23,42,0.6);
+    }
+    .visit-fin-item .label {
+        font-size: 0.65rem;
+        color: #94a3b8;
+        font-weight: 700;
+        letter-spacing: 0.3px;
+    }
+    .visit-fin-item .value {
+        color: #f1f5f9;
+        font-weight: 800;
+        font-size: 0.95rem;
+    }
+    .visit-fin-item.cost { border-color: rgba(248,250,252,0.15); background: rgba(248,250,252,0.04); }
+    .visit-fin-item.cost .value { color: #f8fafc; font-size: 1.05rem; }
+    .visit-fin-item.paid { border-color: rgba(52,211,153,0.2); background: rgba(52,211,153,0.05); }
+    .visit-fin-item.paid .value { color: #34d399; }
+    .visit-fin-item.remaining { border-color: rgba(248,113,113,0.2); background: rgba(248,113,113,0.05); }
+    .visit-fin-item.remaining .value { color: #f87171; }
+
+    .visit-med-row {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px 20px;
+        margin-bottom: 10px;
+    }
+    .visit-med-item .med-label {
+        font-size: 0.7rem;
+        color: #94a3b8;
+        font-weight: 600;
+        display: block;
+        margin-bottom: 2px;
+    }
+    .visit-med-item .med-value {
+        color: #e2e8f0;
+        font-size: 0.88rem;
+    }
+
+    .visit-notes {
+        font-size: 0.82rem;
+        color: #e2e8f0;
+        padding: 10px 14px;
+        background: rgba(15,23,42,0.4);
+        border-radius: 10px;
+        margin-top: 8px;
+        border: 1px solid var(--border-color);
+        line-height: 1.6;
+    }
+
+    .visit-card-actions {
+        display: flex;
+        gap: 8px;
+        padding: 14px 24px;
+        background: rgba(0,0,0,0.15);
+        border-top: 1px solid var(--border-color);
+    }
+    .visit-card-actions .btn {
+        font-size: 0.75rem;
+        border-radius: 10px;
+        padding: 6px 14px;
+        font-weight: 600;
+        transition: all 0.2s ease;
+    }
+    .visit-card-actions .btn:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    }
+
+    .rx-section {
+        margin-top: 14px;
+        padding: 16px 18px;
+        background: rgba(139,92,246,0.05);
+        border-radius: 14px;
+        border: 1px solid rgba(139,92,246,0.15);
+        transition: border-color 0.3s;
+    }
+    .rx-section:hover {
+        border-color: rgba(139,92,246,0.3);
+    }
+    .rx-section-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 12px;
+        padding-bottom: 10px;
+        border-bottom: 1px dashed rgba(139,92,246,0.12);
+        color: #a78bfa;
+        font-weight: 700;
+        font-size: 0.85rem;
+    }
+    .rx-header-actions {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    .rx-count {
+        font-size: 0.7rem;
+        color: #6b7280;
+        font-weight: 600;
+        background: rgba(139,92,246,0.08);
+        padding: 2px 8px;
+        border-radius: 10px;
+    }
+    .rx-hdr-btn {
+        width: 32px;
+        height: 32px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: none;
+        border-radius: 50%;
+        cursor: pointer;
+        font-size: 0.78rem;
+        transition: all 0.25s ease;
+        text-decoration: none;
+        position: relative;
+        overflow: hidden;
+    }
+    .rx-hdr-btn::before {
+        content: '';
+        position: absolute;
+        inset: 0;
+        border-radius: 50%;
+        opacity: 0;
+        transition: opacity 0.3s;
+    }
+    .rx-hdr-btn:hover::before {
+        opacity: 1;
+    }
+    .rx-hdr-btn i {
+        position: relative;
+        z-index: 1;
+    }
+    .rx-hdr-edit {
+        background: linear-gradient(135deg, rgba(245,158,11,0.15), rgba(245,158,11,0.08));
+        color: #fbbf24;
+        box-shadow: 0 2px 8px rgba(245,158,11,0.1);
+    }
+    .rx-hdr-edit::before {
+        background: linear-gradient(135deg, rgba(245,158,11,0.2), rgba(245,158,11,0.1));
+    }
+    .rx-hdr-edit:hover {
+        transform: scale(1.15) rotate(-5deg);
+        box-shadow: 0 4px 15px rgba(245,158,11,0.25);
+        color: #fcd34d;
+    }
+    .rx-hdr-delete {
+        background: linear-gradient(135deg, rgba(239,68,68,0.12), rgba(239,68,68,0.06));
+        color: #f87171;
+        box-shadow: 0 2px 8px rgba(239,68,68,0.1);
+    }
+    .rx-hdr-delete::before {
+        background: linear-gradient(135deg, rgba(239,68,68,0.18), rgba(239,68,68,0.08));
+    }
+    .rx-hdr-delete:hover {
+        transform: scale(1.15);
+        box-shadow: 0 4px 15px rgba(239,68,68,0.25);
+        color: #fca5a5;
+    }
+    .rx-item {
+        display: flex;
+        gap: 14px;
+        padding: 10px 12px;
+        border-bottom: 1px solid rgba(148,163,184,0.04);
+        transition: all 0.25s ease;
+        border-radius: 10px;
+        margin-bottom: 2px;
+    }
+    .rx-item:last-child { border-bottom: none; margin-bottom: 0; }
+    .rx-item:hover {
+        background: linear-gradient(135deg, rgba(139,92,246,0.06), rgba(99,102,241,0.03));
+        transform: translateX(-2px);
+        box-shadow: 0 2px 12px rgba(139,92,246,0.08);
+    }
+    .rx-actions {
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+        padding-top: 2px;
+        flex-shrink: 0;
+    }
+    .rx-btn {
+        width: 30px;
+        height: 30px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border: none;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 0.75rem;
+        transition: all 0.2s ease;
+        text-decoration: none;
+    }
+    .rx-btn-edit {
+        background: rgba(245,158,11,0.12);
+        color: #fbbf24;
+    }
+    .rx-btn-edit:hover {
+        background: rgba(245,158,11,0.25);
+        transform: scale(1.1);
+        box-shadow: 0 2px 10px rgba(245,158,11,0.2);
+    }
+    .rx-btn-delete {
+        background: rgba(239,68,68,0.1);
+        color: #f87171;
+    }
+    .rx-btn-delete:hover {
+        background: rgba(239,68,68,0.22);
+        transform: scale(1.1);
+        box-shadow: 0 2px 10px rgba(239,68,68,0.2);
+    }
+    .rx-body {
+        flex: 1;
+        min-width: 0;
+    }
+    .rx-name {
+        font-weight: 800;
+        color: #c4b5fd;
+        font-size: 0.95rem;
+        margin-bottom: 4px;
+        letter-spacing: 0.3px;
+    }
+    .rx-detail {
+        display: flex;
+        gap: 6px;
+        flex-wrap: wrap;
+        font-size: 0.78rem;
+        color: #94a3b8;
+        margin-bottom: 2px;
+    }
+    .rx-detail span {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+    }
+    .rx-sep {
+        color: #4b5563;
+        font-size: 0.6rem;
+    }
+    .rx-inst {
+        font-size: 0.75rem;
+        color: #6b7280;
+        margin-top: 4px;
+        padding: 5px 8px;
+        background: rgba(139,92,246,0.04);
+        border-radius: 6px;
+        border-right: 2px solid rgba(139,92,246,0.15);
+    }
+
+    .lab-section {
+        margin-top: 12px;
+    }
+    .lab-section-title {
+        color: #38bdf8;
+        font-weight: 700;
+        font-size: 0.85rem;
+        margin-bottom: 8px;
+    }
+    .lab-item {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 10px 14px;
+        background: rgba(255,255,255,0.02);
+        border-radius: 10px;
+        margin-bottom: 4px;
+        border: 1px solid rgba(148,163,184,0.06);
+        transition: background 0.2s ease;
+    }
+    .lab-item:hover { background: rgba(56,189,248,0.03); }
+    .lab-item .lab-name {
+        font-weight: 600;
+        color: #e2e8f0;
+        font-size: 0.85rem;
+    }
+
+
+
+    .lab-item .lab-result {
+        color: #cbd5e1;
+        font-size: 0.8rem;
+    }
+    .lab-status {
+        padding: 3px 12px;
+        border-radius: 20px;
+        font-size: 0.68rem;
+        font-weight: 700;
+    }
+    .status-required { background: rgba(245,158,11,0.1); color: #fbbf24; }
+    .status-done { background: rgba(16,185,129,0.1); color: #34d399; }
+    .status-abnormal { background: rgba(239,68,68,0.1); color: #f87171; }
+
+    .empty-state {
+        text-align: center;
+        padding: 80px 20px;
+    }
+    .empty-state .empty-icon {
+        font-size: 3.5rem;
+        color: rgba(148,163,184,0.2);
+        margin-bottom: 20px;
+    }
+    .empty-state h5 {
+        color: #cbd5e1;
+        font-weight: 700;
+        font-size: 1.2rem;
+        margin-bottom: 8px;
+    }
+    .empty-state p {
+        color: #94a3b8;
+        font-size: 0.9rem;
+    }
+
+    .print-header { display: none; }
+
+    @media print {
+        .sidebar, .btn, .flash-messages, .no-print { display: none !important; }
+        html, body { height: auto !important; overflow: visible !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+        .visit-card { overflow: visible !important; contain: none !important; backdrop-filter: none !important; position: static !important; border-radius: 0 !important; }
+        .visit-card-body, .visit-card-collapse, .visit-card-collapse.closed, .visit-card * {
+            max-height: none !important; height: auto !important; opacity: 1 !important;
+            overflow: visible !important;
+        }
+        .visit-card, .visit-card-body, .visit-card-collapse,
+        .rx-section, .rx-item, .rx-body, .visit-notes, .visit-fin-row {
+            page-break-inside: auto !important;
+            break-inside: auto !important;
+        }
+        .visit-toggle { display: none !important; }
+        .visit-card-header { cursor: default !important; }
+        .content { margin-right: 0 !important; margin-left: 0 !important; width: 100% !important; padding: 20px !important; height: auto !important; min-height: auto !important; }
+        body { background: white !important; color: black !important; }
+        
+        .print-header { display: block !important; text-align: center; margin-bottom: 25px; }
+        .print-header h2 { font-size: 1.8rem; font-weight: 900; color: #0f172a; margin-bottom: 5px; }
+        .print-header p { font-size: 1rem; color: #475569; margin: 0; }
+        
+        .profile-header {
+            background: #f8fafc !important;
+            border: 1px solid #cbd5e1 !important;
+            color: #0f172a !important;
+            padding: 20px !important;
+            margin-bottom: 20px !important;
+        }
+        .profile-header::before, .profile-header::after { display: none !important; }
+        .profile-name { color: #0f172a !important; }
+        .profile-avatar { background: #f1f5f9 !important; color: #0f172a !important; border: 1px solid #cbd5e1 !important; box-shadow: none !important; }
+        .profile-badge { border: 1px solid #cbd5e1 !important; background: #fff !important; color: #0f172a !important; }
+        
+        .info-section { border: 1px solid #cbd5e1 !important; margin-bottom: 20px !important; background: #fff !important; }
+        .info-section-header { border-bottom: 1px solid #cbd5e1 !important; background: #f8fafc !important; }
+        .info-section-title { color: #0f172a !important; }
+        .info-item { border-color: #cbd5e1 !important; }
+        .info-item::before { display: none !important; }
+        .info-item-icon { background: #f1f5f9 !important; color: #475569 !important; border: 1px solid #e2e8f0 !important; }
+        .info-item:hover .info-item-icon { transform: none !important; }
+        .info-label { color: #475569 !important; }
+        .info-value { color: #0f172a !important; }
+        
+        .visit-card { border: 1px solid #cbd5e1 !important; background: #fff !important; }
+        .visit-card::before { display: none !important; }
+        .visit-card-header { border-bottom: 1px solid #cbd5e1 !important; background: #f8fafc !important; }
+        .visit-card-date { color: #d97706 !important; }
+        .visit-hdr-sep { color: #cbd5e1 !important; }
+        .visit-hdr-badge { border: 1px solid #e2e8f0 !important; background: #f1f5f9 !important; color: #475569 !important; }
+        .visit-card-body { color: #0f172a !important; }
+        .visit-fin-row { border-bottom: 1px solid #e2e8f0 !important; }
+        .visit-fin-item { border-color: #e2e8f0 !important; background: #f8fafc !important; }
+        .visit-fin-item .value { color: #0f172a !important; }
+        .visit-fin-item.paid .value { color: #059669 !important; }
+        .visit-fin-item.remaining .value { color: #dc2626 !important; }
+        .visit-med-item .med-value { color: #0f172a !important; }
+        
+        .rx-section { border: 1px solid #cbd5e1 !important; background: #f8fafc !important; }
+        .rx-item { border-bottom: 1px solid #e2e8f0 !important; }
+        .rx-item .rx-name { color: #7c3aed !important; }
+        .rx-item .rx-detail { color: #475569 !important; }
+        .rx-inst { border-right-color: #7c3aed !important; background: #f1f5f9 !important; }
+        .rx-item:hover { background: transparent !important; transform: none !important; box-shadow: none !important; }
+        .rx-hdr-btn { border: 1px solid #cbd5e1 !important; background: #f1f5f9 !important; }
+        .rx-hdr-edit { color: #d97706 !important; }
+        .rx-hdr-delete { color: #dc2626 !important; }
+        .rx-hdr-btn:hover { transform: none !important; box-shadow: none !important; }
+        
+        .lab-item { border-color: #cbd5e1 !important; }
+        .lab-item .lab-name { color: #0f172a !important; }
+    }
+
+    /* ── Responsive ── */
+    @media (max-width: 991px) {
+        .col-lg-4, .col-lg-8 { flex: 0 0 100%; max-width: 100%; }
+    }
+    @media (max-width: 767px) {
+        .profile-header { flex-direction: column; align-items: flex-start; gap: 12px; padding: 20px; }
+        .tab-nav { overflow-x: auto; flex-wrap: nowrap; }
+        .tab-nav .tab-btn { white-space: nowrap; font-size: 0.82rem; padding: 8px 14px; }
+        .visit-row { flex-wrap: wrap; gap: 8px; }
+        .page-header { flex-direction: column; align-items: flex-start; gap: 10px; }
+    }
+    .day-checkbox { cursor:pointer; display:inline-flex; align-items:center; gap:4px; }
+    .day-checkbox input { display:none; }
+    .day-checkbox span {
+        display:inline-block; padding:6px 14px; border-radius:8px;
+        background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.1);
+        font-size:0.85rem; transition:all .2s; user-select:none;
+    }
+    .day-checkbox input:checked + span {
+        background:var(--accent-blue); border-color:var(--accent-blue);
+        color:#fff; box-shadow:0 0 12px rgba(14,165,233,0.3);
+    }
+    .day-checkbox span:hover { border-color:var(--accent-blue); }
+    @media (max-width: 575px) {
+        .profile-avatar { width: 50px; height: 50px; font-size: 1.4rem; border-radius: 14px; }
+        .patient-name-title { font-size: 1.2rem; }
+        .info-grid { grid-template-columns: 1fr; }
+        .profile-header { padding: 16px; }
+        .profile-name { font-size: 1.2rem; }
+        .visit-card-header { flex-direction: column; align-items: flex-start; gap: 8px; }
+        .visit-card-actions { flex-wrap: wrap; }
+        .visit-fin-row { gap: 10px; }
+        .visit-fin-item { font-size: 0.8rem; padding: 4px 10px; }
+    }
+</style>
+
+<!-- Print Header -->
+<div class="print-header">
+    <h2>{{ settings['clinic_name'] if settings and settings['clinic_name'] else 'Muscle Station' }}</h2>
+    <p><strong>الملف الطبي الكامل للمريض</strong></p>
+    <hr style="border-top: 2px solid #0f172a; margin-top: 15px;">
+</div>
+
+<div class="profile-header">
+        <div class="d-flex align-items-center gap-4 flex-wrap">
+            {% if patient['gender'] == 'أنثى' %}
+            <div class="profile-avatar female" title="أنثى"><i class="fas fa-female"></i></div>
+            {% else %}
+            <div class="profile-avatar male" title="ذكر"><i class="fas fa-male"></i></div>
+            {% endif %}
+            <div>
+                <h1 class="profile-name">{{ patient['name'] }}</h1>
+                <p class="profile-meta">
+
+
+                {% if patient['patient_code'] %}
+                <span class="d-inline-flex align-items-center gap-0 ms-2" style="background:linear-gradient(135deg,rgba(139,92,246,0.12),rgba(99,102,241,0.08));border:1.5px solid rgba(139,92,246,0.35);border-radius:9px;font-size:1rem;font-weight:700;overflow:hidden;box-shadow:0 2px 5px rgba(0,0,0,0.12);vertical-align:middle;">
+                    <span style="background:linear-gradient(135deg,#7c3aed,#6366f1);color:#fff;padding:4px 10px;font-size:0.75rem;font-weight:800;border-radius:7px 0 0 7px;letter-spacing:0.5px;">ID</span>
+                    <span style="padding:4px 11px;color:#a78bfa;">{{ patient['patient_code'] }}</span>
+                </span>
+                {% endif %}
+
+                <span class="profile-badge ms-2" style="background: rgba(16, 185, 129, 0.15); color: var(--accent-green);">
+                    <i class="fas fa-calendar"></i> {{ patient['created_at'][:10] if patient['created_at'] else '---' }}
+                </span>
+            </p>
+        </div>
+        <div class="me-auto d-flex gap-2 no-print">
+            <button onclick="printMedicalRecord()" class="btn btn-outline-info btn-sm d-flex align-items-center gap-2">
+                <i class="fas fa-print"></i> طباعة السجل الطبي
+            </button>
+            <a href="/reception" class="btn btn-outline-light btn-sm d-flex align-items-center gap-2">
+                <i class="fas fa-arrow-right"></i> رجوع
+            </a>
+        </div>
+        </div>
+    </div>
+
+<!-- Patient Info -->
+<div class="info-section">
+    <div class="info-section-header">
+        <h5 class="info-section-title"><i class="fas fa-user"></i> بيانات المريض</h5>
+    </div>
+    <div class="info-grid">
+        <div class="info-item">
+            <div class="info-item-icon"><i class="fas fa-phone" style="color:#38bdf8"></i></div>
+            <div class="info-item-body">
+                <span class="info-label">الهاتف</span>
+                <span class="info-value">{{ patient['phone'] or '---' }}</span>
+            </div>
+        </div>
+        <div class="info-item">
+            <div class="info-item-icon"><i class="fas fa-mobile-alt" style="color:#2dd4bf"></i></div>
+            <div class="info-item-body">
+                <span class="info-label">هاتف آخر</span>
+                <span class="info-value">{{ patient['phone2'] or '---' }}</span>
+            </div>
+        </div>
+        <div class="info-item">
+            <div class="info-item-icon"><i class="fas fa-birthday-cake" style="color:#fb7185"></i></div>
+            <div class="info-item-body">
+                <span class="info-label">السن</span>
+                <span class="info-value">{{ patient['age'] if patient['age'] else '---' }} سنة</span>
+            </div>
+        </div>
+        <div class="info-item">
+            <div class="info-item-icon"><i class="fas fa-venus-mars" style="color:#a78bfa"></i></div>
+            <div class="info-item-body">
+                <span class="info-label">النوع</span>
+                <span class="info-value">{{ patient['gender'] or '---' }}</span>
+            </div>
+        </div>
+        <div class="info-item">
+            <div class="info-item-icon"><i class="fas fa-map-marker-alt" style="color:#fbbf24"></i></div>
+            <div class="info-item-body">
+                <span class="info-label">العنوان</span>
+                <span class="info-value">{{ patient['address'] or '---' }}</span>
+            </div>
+        </div>
+        <div class="info-item">
+            <div class="info-item-icon"><i class="fas fa-industry" style="color:#94a3b8"></i></div>
+            <div class="info-item-body">
+                <span class="info-label">طبيعة العمل</span>
+                <span class="info-value">{{ patient['work_nature'] or '---' }}</span>
+            </div>
+        </div>
+        <div class="info-item">
+            <div class="info-item-icon"><i class="fas fa-stethoscope" style="color:#34d399"></i></div>
+            <div class="info-item-body">
+                <span class="info-label">التشخيص</span>
+                <span class="info-value">{{ patient['diagnosis'] or '---' }}</span>
+            </div>
+        </div>
+        <div class="info-item">
+            <div class="info-item-icon"><i class="fas fa-heartbeat" style="color:#f87171"></i></div>
+            <div class="info-item-body">
+                <span class="info-label">أمراض مزمنة</span>
+                <span class="info-value">{{ patient['chronic_diseases'] or '---' }}</span>
+            </div>
+        </div>
+        <div class="info-item">
+            <div class="info-item-icon"><i class="fas fa-hand-holding-medical" style="color:#fb923c"></i></div>
+            <div class="info-item-body">
+                <span class="info-label">مناطق الألم</span>
+                <span class="info-value">{{ patient['pain_area'] or '---' }}</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Visits Timeline -->
+<div class="visits-timeline">
+    <div class="d-flex align-items-center mb-4" style="justify-content:space-between;">
+        <div class="d-flex align-items-center gap-3">
+            <h4 style="color: #f8fafc; font-weight: 900; margin: 0;"><i class="fas fa-history" style="color: #38bdf8;"></i> سجل الزيارات</h4>
+            <span style="font-size:0.8rem;color:#64748b;background:rgba(148,163,184,0.08);padding:3px 12px;border-radius:10px;">{{ visits|length }} زيارة</span>
+        </div>
+        <button class="btn btn-sm" style="color:#fff;background:#198754;border-color:#198754;border-radius:8px;padding:7px 20px;font-weight:700;font-size:0.82rem;box-shadow:0 2px 8px rgba(25,135,84,0.3);" data-bs-toggle="modal" data-bs-target="#addVisitModal">
+            <i class="fas fa-plus-circle"></i> إضافة زيارة جديدة
+        </button>
+    </div>
+{% if visit_groups %}
+    {% for group in visit_groups %}
+    {% set visit = group %}
+    <div class="visit-card" id="visit-{{ visit['id'] }}">
+        <div class="visit-card-header" onclick="toggleVisit({{ visit['id'] }})" style="cursor:pointer;">
+            <i class="fas fa-chevron-down visit-toggle collapsed" id="toggle-{{ visit['id'] }}"></i>
+            <span class="visit-card-date">
+                <i class="fas fa-calendar-alt text-warning" style="font-size:0.7rem;"></i>
+                <span style="font-family:'Courier New',monospace;font-weight:700;font-size:0.85rem;">{{ visit['visit_date'] }}</span>
+                {%- set dt = datetime.datetime.strptime(visit['visit_date'], '%Y-%m-%d') -%}
+                {%- set day_en = dt.strftime('%A') -%}
+                {%- if day_en == 'Saturday' %}<span class="visit-day-badge">السبت</span>
+                {%- elif day_en == 'Sunday' %}<span class="visit-day-badge">الأحد</span>
+                {%- elif day_en == 'Monday' %}<span class="visit-day-badge">الإثنين</span>
+                {%- elif day_en == 'Tuesday' %}<span class="visit-day-badge">الثلاثاء</span>
+                {%- elif day_en == 'Wednesday' %}<span class="visit-day-badge">الأربعاء</span>
+                {%- elif day_en == 'Thursday' %}<span class="visit-day-badge">الخميس</span>
+                {%- elif day_en == 'Friday' %}<span class="visit-day-badge">الجمعه</span>
+                {%- endif %}
+                {% if visit['session_time'] %}<span class="visit-card-time"><i class="far fa-clock ms-1"></i> {{ visit['session_time']|to12h }}</span>{% elif visit['created_at'] %}<span class="visit-card-time"><i class="far fa-clock ms-1"></i> {{ visit['created_at'][11:16] }}</span>{% endif %}
+            </span>
+            <span class="visit-hdr-sep">|</span>
+            <span class="visit-card-type" style="
+                {% if visit['visit_type'] in ('جلسه تأهيل', 'جلسه علاج طبيعي') %}background: rgba(59,130,246,0.15); color: #93c5fd;
+                {% elif visit['visit_type'] == 'الباقات' %}background: rgba(139,92,246,0.15); color: #a78bfa;
+                {% elif visit['visit_type'] in ('متابعة','متابعه') %}background: rgba(16,185,129,0.15); color: #34d399;
+                {% elif visit['visit_type'] == 'طارئ' %}background: rgba(239,68,68,0.15); color: #f87171;
+                {% elif visit['visit_type'] == 'مزمن' %}background: rgba(245,158,11,0.15); color: #fbbf24;
+                {% elif visit['visit_type'] == 'التغذية' %}background: rgba(251,191,36,0.15); color: #fbbf24;
+                {% else %}background: rgba(148,163,184,0.15); color: #cbd5e1;{% endif %}">
+                {{ visit['visit_type'] if visit['visit_type'] else 'جلسه علاج طبيعي' }}
+            </span>
+            {% if visit['session_count'] and visit['session_count']|int > 1 and visit['visit_type'] not in ('متابعة','متابعه') %}
+            <span class="visit-hdr-sep">|</span>
+            <span class="visit-hdr-badge" style="background:rgba(245,158,11,0.1);color:#f59e0b;">
+                <i class="fas fa-sort-numeric-up"></i> {{ visit['session_count'] }} جلسات
+            </span>
+            {% endif %}
+            {% if session_numbers.get(visit['id']) %}
+            <span class="visit-hdr-sep">|</span>
+            <span class="visit-hdr-badge" style="background:rgba(59,130,246,0.15);color:#93c5fd;">
+                <i class="fas fa-hashtag"></i> جلسة {{ session_numbers[visit['id']] }}
+            </span>
+            {% endif %}
+            {% if visit['visit_type'] == 'الباقات' %}
+            <span class="visit-hdr-sep">|</span>
+            <span class="visit-hdr-badge" style="background:rgba(16,185,129,0.15);color:#34d399;">
+                <i class="fas fa-hashtag"></i> جلسة 1
+            </span>
+            {% endif %}
+            {% if visit['session_days'] %}
+            <span class="visit-hdr-sep">|</span>
+            <span class="visit-hdr-badge" style="background:rgba(167,139,250,0.1);color:#a78bfa;">
+                <i class="fas fa-calendar-week"></i> {{ visit['session_days'] }}
+            </span>
+            {% endif %}
+        </div>
+        <div class="visit-card-collapse closed" id="collapse-{{ visit['id'] }}">
+        <div class="visit-card-body">
+            <div class="visit-fin-row">
+                {% if visit['visit_type'] not in ('متابعة','متابعه') %}
+                <div class="visit-fin-item cost">
+                    <i class="fas fa-coins" style="color: #fbbf24; font-size: 0.75rem;"></i>
+                    <span class="label">التكلفة</span>
+                    <span class="value">{{ visit['cost'] | int }}</span>
+                </div>
+                {% endif %}
+                {% if visit['paid_amount'] is not none %}
+                <div class="visit-fin-item paid">
+                    <i class="fas fa-check-circle" style="color: #34d399; font-size: 0.75rem;"></i>
+                    <span class="label">مدفوع</span>
+                    <span class="value">{{ visit['paid_amount'] | int }}</span>
+                </div>
+                {% endif %}
+                {% if visit['remaining_amount'] is not none and visit['remaining_amount'] > 0 %}
+                <div class="visit-fin-item remaining">
+                    <i class="fas fa-hourglass-half" style="color: #f87171; font-size: 0.75rem;"></i>
+                    <span class="label">متبقي</span>
+                    <span class="value">{{ visit['remaining_amount'] | int }}</span>
+                </div>
+                {% endif %}
+                {% if visit['payment_method'] %}
+                <div class="visit-fin-item">
+                    <i class="fas fa-wallet"></i>
+                    <span class="label">طريقة الدفع</span>
+                    <span class="value">{{ visit['payment_method'] }}</span>
+                </div>
+                {% endif %}
+                {% if visit['visit_type'] in ('متابعة','متابعه') and visit['session_count'] and visit['session_count']|int >= 1 %}
+                <div class="visit-fin-item">
+                    <i class="fas fa-sort-numeric-up" style="color: #34d399;"></i>
+                    <span class="label">رقم الجلسة</span>
+                    <span class="value">{{ visit['session_count'] }}</span>
+                </div>
+                {% endif %}
+            </div>
+
+            {% if visit['diagnosis'] or visit['symptoms'] %}
+            <div class="visit-notes">
+                {% if visit['diagnosis'] %}<strong>التشخيص:</strong> {{ visit['diagnosis'] }}{% endif %}
+                {% if visit['diagnosis'] and visit['symptoms'] %} | {% endif %}
+                {% if visit['symptoms'] %}<strong>الأعراض:</strong> {{ visit['symptoms'] }}{% endif %}
+            </div>
+            {% endif %}
+
+            <!-- Prescriptions for this visit -->
+            {% if prescriptions_by_visit and visit['id'] in prescriptions_by_visit %}
+            <div class="rx-section">
+                <div class="rx-section-header">
+                    <span><i class="fas fa-prescription"></i> الروشتات</span>
+                    <div class="rx-header-actions">
+                        <span class="rx-count">{{ prescriptions_by_visit[visit['id']]|length }}</span>
+                        <button class="rx-hdr-btn rx-hdr-edit" data-bs-toggle="modal" data-bs-target="#editRxModal{{ visit['id'] }}" title="تعديل كل الأدوية">
+                            <i class="fas fa-pen"></i>
+                        </button>
+                        <a href="/delete_visit_prescriptions/{{ visit['id'] }}" class="rx-hdr-btn rx-hdr-delete" onclick="return confirm('حذف كل الأدوية في هذه الزيارة؟')" title="حذف الكل">
+                            <i class="fas fa-trash-alt"></i>
+                        </a>
+                    </div>
+                </div>
+                {% for pr in prescriptions_by_visit[visit['id']] %}
+                <div class="rx-item">
+                    <div class="rx-body">
+                        <div class="rx-name">{{ pr['medication_name'] }}</div>
+                        <div class="rx-detail">
+                            <span><i class="fas fa-syringe"></i> {{ pr['dosage'] or '---' }}</span>
+                            <span class="rx-sep">|</span>
+                            <span><i class="fas fa-clock"></i> {{ pr['frequency'] or '---' }}</span>
+                            <span class="rx-sep">|</span>
+                            <span><i class="fas fa-hourglass-half"></i> {{ pr['duration'] or '---' }}</span>
+                        </div>
+                        {% if pr['instructions'] %}
+                        <div class="rx-inst">{{ pr['instructions'] }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            <!-- Lab tests for this visit -->
+            {% if lab_tests_by_visit and visit['id'] in lab_tests_by_visit %}
+            <div class="lab-section">
+                <div class="lab-section-title"><i class="fas fa-flask"></i> التحاليل</div>
+                {% for lt in lab_tests_by_visit[visit['id']] %}
+                <div class="lab-item">
+                    <span class="lab-name">{{ lt['test_name'] }}</span>
+                    {% if lt['result'] %}
+                    <span class="lab-result">{{ lt['result'] }}</span>
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+        </div>
+        <div class="visit-card-actions">
+            {% if visit['remaining_amount'] is not none and visit['remaining_amount'] > 0 %}
+            <button type="button" class="btn btn-sm" style="background: rgba(16,185,129,0.15); color: #34d399; border: 1px solid rgba(16,185,129,0.25);" data-bs-toggle="modal" data-bs-target="#settleModal{{ visit['id'] }}">
+                <i class="fas fa-hand-holding-usd"></i> تسوية
+            </button>
+            {% endif %}
+            <button class="btn btn-sm" style="background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;border:none;border-radius:8px;padding:5px 14px;font-weight:700;font-size:0.72rem;box-shadow:0 2px 8px rgba(245,158,11,0.3);" data-bs-toggle="modal" data-bs-target="#editVisitModal{{ visit['id'] }}">
+                <i class="fas fa-edit"></i> تعديل الزيارة
+            </button>
+            <a href="/delete_visit/{{ visit['id'] }}" class="btn btn-sm" style="background:linear-gradient(135deg,#ef4444,#dc2626);color:#fff;border:none;border-radius:8px;padding:5px 14px;font-weight:700;font-size:0.72rem;box-shadow:0 2px 8px rgba(239,68,68,0.3);" onclick="return confirm('هل تريد حذف هذه الزيارة؟')">
+                <i class="fas fa-trash"></i> حذف الزيارة
+            </a>
+        </div>
+        </div>
+        {% if group.children %}
+        <div class="visit-children">
+            {% for child in group.children %}
+            {% set visit = child %}
+            <div class="visit-child-card" id="visit-{{ visit['id'] }}">
+                <div class="visit-card-header" onclick="toggleVisit({{ visit['id'] }})" style="cursor:pointer;">
+                    <i class="fas fa-chevron-down visit-toggle collapsed" id="toggle-{{ visit['id'] }}"></i>
+                    <span class="visit-card-date">
+                        <i class="fas fa-calendar-alt text-warning" style="font-size:0.7rem;"></i>
+                        <span style="font-family:'Courier New',monospace;font-weight:700;font-size:0.85rem;">{{ visit['visit_date'] }}</span>
+                        {%- set dt = datetime.datetime.strptime(visit['visit_date'], '%Y-%m-%d') -%}
+                        {%- set day_en = dt.strftime('%A') -%}
+                        {%- if day_en == 'Saturday' %}<span class="visit-day-badge">السبت</span>
+                        {%- elif day_en == 'Sunday' %}<span class="visit-day-badge">الأحد</span>
+                        {%- elif day_en == 'Monday' %}<span class="visit-day-badge">الإثنين</span>
+                        {%- elif day_en == 'Tuesday' %}<span class="visit-day-badge">الثلاثاء</span>
+                        {%- elif day_en == 'Wednesday' %}<span class="visit-day-badge">الأربعاء</span>
+                        {%- elif day_en == 'Thursday' %}<span class="visit-day-badge">الخميس</span>
+                        {%- elif day_en == 'Friday' %}<span class="visit-day-badge">الجمعه</span>
+                        {%- endif %}
+                        {% if visit['session_time'] %}<span class="visit-card-time"><i class="far fa-clock ms-1"></i> {{ visit['session_time']|to12h }}</span>{% elif visit['created_at'] %}<span class="visit-card-time"><i class="far fa-clock ms-1"></i> {{ visit['created_at'][11:16] }}</span>{% endif %}
+                    </span>
+                    <span class="visit-hdr-sep">|</span>
+                    <span class="visit-card-type" style="background: rgba(16,185,129,0.15); color: #34d399;">
+                        {{ visit['visit_type'] if visit['visit_type'] else 'متابعه' }}
+                    </span>
+                    {% if session_numbers.get(visit['id']) %}
+                    <span class="visit-hdr-sep">|</span>
+                    <span class="visit-hdr-badge" style="background:rgba(59,130,246,0.15);color:#93c5fd;">
+                        <i class="fas fa-hashtag"></i> جلسة {{ session_numbers[visit['id']] }}
+                    </span>
+                    {% endif %}
+                </div>
+                <div class="visit-card-collapse closed" id="collapse-{{ visit['id'] }}">
+                <div class="visit-card-body" style="padding-right:0;">
+                    <div class="visit-fin-row">
+                        {% if visit['paid_amount'] is not none %}
+                        <div class="visit-fin-item paid">
+                            <i class="fas fa-check-circle" style="color: #34d399; font-size: 0.75rem;"></i>
+                            <span class="label">مدفوع</span>
+                            <span class="value">{{ visit['paid_amount'] | int }}</span>
+                        </div>
+                        {% endif %}
+                        {% if visit['remaining_amount'] is not none and visit['remaining_amount'] > 0 %}
+                        <div class="visit-fin-item remaining">
+                            <i class="fas fa-hourglass-half" style="color: #f87171; font-size: 0.75rem;"></i>
+                            <span class="label">متبقي</span>
+                            <span class="value">{{ visit['remaining_amount'] | int }}</span>
+                        </div>
+                        {% endif %}
+                        {% if visit['payment_method'] %}
+                        <div class="visit-fin-item">
+                            <i class="fas fa-wallet"></i>
+                            <span class="label">طريقة الدفع</span>
+                            <span class="value">{{ visit['payment_method'] }}</span>
+                        </div>
+                        {% endif %}
+                        {% if visit['session_count'] and visit['session_count']|int >= 1 %}
+                        <div class="visit-fin-item">
+                            <i class="fas fa-sort-numeric-up" style="color: #34d399;"></i>
+                            <span class="label">رقم الجلسة</span>
+                            <span class="value">{{ visit['session_count'] }}</span>
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% if visit['diagnosis'] or visit['symptoms'] %}
+                    <div class="visit-notes">
+                        {% if visit['diagnosis'] %}<strong>التشخيص:</strong> {{ visit['diagnosis'] }}{% endif %}
+                        {% if visit['diagnosis'] and visit['symptoms'] %} | {% endif %}
+                        {% if visit['symptoms'] %}<strong>الأعراض:</strong> {{ visit['symptoms'] }}{% endif %}
+                    </div>
+                    {% endif %}
+                    {% if prescriptions_by_visit and visit['id'] in prescriptions_by_visit %}
+                    <div class="rx-section">
+                        <div class="rx-section-header">
+                            <span><i class="fas fa-prescription"></i> الروشتات</span>
+                            <div class="rx-header-actions">
+                                <span class="rx-count">{{ prescriptions_by_visit[visit['id']]|length }}</span>
+                                <button class="rx-hdr-btn rx-hdr-edit" data-bs-toggle="modal" data-bs-target="#editRxModal{{ visit['id'] }}" title="تعديل كل الأدوية">
+                                    <i class="fas fa-pen"></i>
+                                </button>
+                                <a href="/delete_visit_prescriptions/{{ visit['id'] }}" class="rx-hdr-btn rx-hdr-delete" onclick="return confirm('حذف كل الأدوية في هذه الزيارة؟')" title="حذف الكل">
+                                    <i class="fas fa-trash-alt"></i>
+                                </a>
+                            </div>
+                        </div>
+                        {% for pr in prescriptions_by_visit[visit['id']] %}
+                        <div class="rx-item">
+                            <div class="rx-body">
+                                <div class="rx-name">{{ pr['medication_name'] }}</div>
+                                <div class="rx-detail">
+                                    <span><i class="fas fa-syringe"></i> {{ pr['dosage'] or '---' }}</span>
+                                    <span class="rx-sep">|</span>
+                                    <span><i class="fas fa-clock"></i> {{ pr['frequency'] or '---' }}</span>
+                                    <span class="rx-sep">|</span>
+                                    <span><i class="fas fa-hourglass-half"></i> {{ pr['duration'] or '---' }}</span>
+                                </div>
+                                {% if pr['instructions'] %}
+                                <div class="rx-inst">{{ pr['instructions'] }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                    {% if lab_tests_by_visit and visit['id'] in lab_tests_by_visit %}
+                    <div class="lab-section">
+                        <div class="lab-section-title"><i class="fas fa-flask"></i> التحاليل</div>
+                        {% for lt in lab_tests_by_visit[visit['id']] %}
+                        <div class="lab-item">
+                            <span class="lab-name">{{ lt['test_name'] }}</span>
+                            {% if lt['result'] %}
+                            <span class="lab-result">{{ lt['result'] }}</span>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                </div>
+                <div class="visit-card-actions" style="padding-right:0;">
+                    {% if visit['remaining_amount'] is not none and visit['remaining_amount'] > 0 %}
+                    <button type="button" class="btn btn-sm" style="background: rgba(16,185,129,0.15); color: #34d399; border: 1px solid rgba(16,185,129,0.25);" data-bs-toggle="modal" data-bs-target="#settleModal{{ visit['id'] }}">
+                        <i class="fas fa-hand-holding-usd"></i> تسوية
+                    </button>
+                    {% endif %}
+                    <button class="btn btn-sm" style="background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;border:none;border-radius:8px;padding:5px 14px;font-weight:700;font-size:0.72rem;box-shadow:0 2px 8px rgba(245,158,11,0.3);" data-bs-toggle="modal" data-bs-target="#editVisitModal{{ visit['id'] }}">
+                        <i class="fas fa-edit"></i> تعديل الزيارة
+                    </button>
+                    <a href="/delete_visit/{{ visit['id'] }}" class="btn btn-sm" style="background:linear-gradient(135deg,#ef4444,#dc2626);color:#fff;border:none;border-radius:8px;padding:5px 14px;font-weight:700;font-size:0.72rem;box-shadow:0 2px 8px rgba(239,68,68,0.3);" onclick="return confirm('هل تريد حذف هذه الزيارة؟')">
+                        <i class="fas fa-trash"></i> حذف الزيارة
+                    </a>
+                </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Prescription Modal -->
+    <div class="modal fade" id="prescriptionModal{{ visit['id'] }}" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 style="color: var(--accent-purple);"><i class="fas fa-prescription"></i> إضافة روشتة - {{ visit['visit_date'] }}</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <form action="/add_prescription" method="POST">
+                    <input type="hidden" name="visit_id" value="{{ visit['id'] }}">
+                    <input type="hidden" name="patient_id" value="{{ patient['id'] }}">
+                    <div class="modal-body">
+                        <div id="medsContainer{{ visit['id'] }}">
+                            <div class="med-row mb-3" style="border:1px solid rgba(148,163,184,0.1);border-radius:10px;padding:12px;background:rgba(255,255,255,0.02);">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <span style="color:var(--accent-purple);font-weight:700;font-size:0.85rem;"><i class="fas fa-capsules"></i> الدواء 1</span>
+                                    <button type="button" class="btn btn-sm" style="background:rgba(239,68,68,0.1);color:#f87171;border:none;font-size:0.75rem;display:none;" onclick="this.closest('.med-row').remove();renumberMeds('{{ visit['id'] }}');">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                </div>
+                                <div class="row g-2">
+                                    <div class="col-12">
+                                        <label class="form-label" style="font-size:0.78rem;">اسم الدواء *</label>
+                                        <input type="text" name="medication_name" class="form-control" required style="font-size:0.85rem;">
+                                    </div>
+                                    <div class="col-4">
+                                        <label class="form-label" style="font-size:0.78rem;">الجرعة</label>
+                                        <input type="text" name="dosage" class="form-control" placeholder="500 مجم" style="font-size:0.85rem;">
+                                    </div>
+                                    <div class="col-4">
+                                        <label class="form-label" style="font-size:0.78rem;">التكرار</label>
+                                        <input type="text" name="frequency" class="form-control" placeholder="3 مرات يومياً" style="font-size:0.85rem;">
+                                    </div>
+                                    <div class="col-4">
+                                        <label class="form-label" style="font-size:0.78rem;">المدة</label>
+                                        <input type="text" name="duration" class="form-control" placeholder="7 أيام" style="font-size:0.85rem;">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <button type="button" class="btn btn-sm w-100 mb-3" style="background:rgba(139,92,246,0.1);color:#a78bfa;border:1px dashed rgba(139,92,246,0.3);border-radius:8px;font-size:0.82rem;" onclick="addMedRow('{{ visit['id'] }}')">
+                            <i class="fas fa-plus"></i> إضافة دواء آخر
+                        </button>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                        <button type="submit" class="btn" style="background: var(--accent-purple); color: white;">
+                            <i class="fas fa-save"></i> حفظ الروشتة
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Visit Prescriptions Modal -->
+    <div class="modal fade" id="editRxModal{{ visit['id'] }}" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 style="color: var(--accent-purple);"><i class="fas fa-prescription"></i> تعديل الروشتات - {{ visit['visit_date'] }}</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <form action="/edit_visit_prescriptions/{{ visit['id'] }}" method="POST">
+                    <input type="hidden" name="visit_id" value="{{ visit['id'] }}">
+                    <input type="hidden" name="patient_id" value="{{ patient['id'] }}">
+                    <div class="modal-body">
+                        <div id="editMedsContainer{{ visit['id'] }}">
+                            {% if prescriptions_by_visit and visit['id'] in prescriptions_by_visit %}
+                            {% for pr in prescriptions_by_visit[visit['id']] %}
+                            <div class="med-row mb-3" style="border:1px solid rgba(148,163,184,0.1);border-radius:10px;padding:12px;background:rgba(255,255,255,0.02);">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <span style="color:var(--accent-purple);font-weight:700;font-size:0.85rem;"><i class="fas fa-capsules"></i> الدواء {{ loop.index }}</span>
+                                    <button type="button" class="btn btn-sm" style="background:rgba(239,68,68,0.1);color:#f87171;border:none;font-size:0.75rem;{% if loop.first %}display:none{% endif %};" onclick="this.closest('.med-row').remove();renumberMeds('{{ visit['id'] }}');">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                </div>
+                                <div class="row g-2">
+                                    <div class="col-12">
+                                        <label class="form-label" style="font-size:0.78rem;">اسم الدواء *</label>
+                                        <input type="text" name="medication_name" class="form-control" value="{{ pr['medication_name'] }}" required style="font-size:0.85rem;">
+                                    </div>
+                                    <div class="col-4">
+                                        <label class="form-label" style="font-size:0.78rem;">الجرعة</label>
+                                        <input type="text" name="dosage" class="form-control" value="{{ pr['dosage'] or '' }}" style="font-size:0.85rem;">
+                                    </div>
+                                    <div class="col-4">
+                                        <label class="form-label" style="font-size:0.78rem;">التكرار</label>
+                                        <input type="text" name="frequency" class="form-control" value="{{ pr['frequency'] or '' }}" style="font-size:0.85rem;">
+                                    </div>
+                                    <div class="col-4">
+                                        <label class="form-label" style="font-size:0.78rem;">المدة</label>
+                                        <input type="text" name="duration" class="form-control" value="{{ pr['duration'] or '' }}" style="font-size:0.85rem;">
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                            {% endif %}
+                        </div>
+                        <button type="button" class="btn btn-sm w-100 mb-3" style="background:rgba(139,92,246,0.1);color:#a78bfa;border:1px dashed rgba(139,92,246,0.3);border-radius:8px;font-size:0.82rem;" onclick="addEditMedRow('{{ visit['id'] }}')">
+                            <i class="fas fa-plus"></i> إضافة دواء آخر
+                        </button>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                        <button type="submit" class="btn" style="background: var(--accent-purple); color: white;">
+                            <i class="fas fa-save"></i> حفظ التعديلات
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+{% endfor %}
+</div>
+{% else %}
+<div class="empty-state" style="text-align: center; padding: 60px 20px;">
+    <div style="font-size: 3rem; color: var(--text-muted); margin-bottom: 15px;">
+        <i class="fas fa-file-medical-alt"></i>
+    </div>
+    <h5 style="color: var(--text-main); font-weight: 700;">لا توجد زيارات لهذا المريض</h5>
+    <p style="color: var(--text-muted);">يمكنك إضافة زيارة جديدة من صفحة الاستقبال</p>
+</div>
+{% endif %}
+
+<!-- Modals: Lab Test Edit Pain PT -->
+{% for visit in visits %}
+<div class="modal fade" id="labModal{{ visit['id'] }}" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 style="color: var(--accent-blue);"><i class="fas fa-flask"></i> إضافة تحليل - {{ visit['visit_date'] }}</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form action="/add_lab_test" method="POST">
+                <input type="hidden" name="visit_id" value="{{ visit['id'] }}">
+                <input type="hidden" name="patient_id" value="{{ patient['id'] }}">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">اسم التحليل *</label>
+                        <input type="text" name="test_name" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">المدى الطبيعي</label>
+                        <input type="text" name="normal_range" class="form-control" placeholder="مثال: 70-110">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">ملاحظات</label>
+                        <textarea name="notes" class="form-control" rows="2"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-info w-100">
+                        <i class="fas fa-save"></i> حفظ التحليل
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Visit Modal -->
+<div class="modal fade" id="editVisitModal{{ visit['id'] }}" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content" style="border-radius:16px;overflow:hidden;">
+            <div class="modal-header">
+                <h5 style="color: var(--accent-orange);"><i class="fas fa-edit"></i> تعديل زيارة</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form action="/edit_visit/{{ visit['id'] }}" method="POST">
+                <input type="hidden" name="patient_id" value="{{ patient['id'] }}">
+                <div class="modal-body">
+                    <div class="row g-3">
+                        <input type="hidden" name="visit_date" value="{{ visit['visit_date'] }}">
+                        <div class="col-4">
+                            <label class="form-label"><i class="fas fa-list-alt text-info"></i> نوع الجلسة</label>
+                            <select name="visit_type" class="form-select" onchange="onEditVisitTypeChange(this, {{ visit['id'] }}, {{ follow_up_count }}, {{ package_session_count }})">
+                                <option value="جلسه علاج طبيعي" {% if visit['visit_type'] == 'جلسه علاج طبيعي' %}selected{% endif %}>جلسه علاج طبيعي</option>
+                                <option value="جلسه تأهيل" {% if visit['visit_type'] == 'جلسه تأهيل' %}selected{% endif %}>جلسه تأهيل</option>
+                                <option value="حجامه جافه" {% if visit['visit_type'] == 'حجامه جافه' %}selected{% endif %}>حجامه جافه</option>
+                                <option value="حجامه دموية" {% if visit['visit_type'] == 'حجامه دموية' %}selected{% endif %}>حجامه دموية</option>
+                                <option value="جلسه علاج طبيعي خاص" {% if visit['visit_type'] == 'جلسه علاج طبيعي خاص' %}selected{% endif %}>جلسه علاج طبيعي خاص</option>
+                                <option value="الباقات" {% if visit['visit_type'] == 'الباقات' %}selected{% endif %}>الباقات</option>
+                                <option value="متابعه" {% if visit['visit_type'] == 'متابعه' %}selected{% endif %}>متابعه</option>
+                                <option value="التغذية" {% if visit['visit_type'] == 'التغذية' %}selected{% endif %}>التغذية</option>
+                            </select>
+                        </div>
+                        <div class="col-4" id="editCostField{{ visit['id'] }}" {% if visit['visit_type'] == 'متابعه' %}style="display:none"{% endif %}>
+                            <label class="form-label"><i class="fas fa-tag text-warning"></i> التكلفة</label>
+                            <input type="number" name="cost" value="{{ visit['cost'] }}" id="editCost{{ visit['id'] }}" class="form-control" required oninput="editCalc('{{ visit['id'] }}')">
+                        </div>
+                    </div>
+                    <div class="row g-3 mt-1">
+                        <div class="col-4" id="editSessionField{{ visit['id'] }}" {% if visit['visit_type'] not in ('جلسه تأهيل','الباقات') %}style="display:none"{% endif %}>
+                            <label class="form-label"><i class="fas fa-sort-numeric-up text-primary"></i> عدد الجلسات</label>
+                            <input type="number" name="session_count" value="{{ visit['session_count'] or 1 }}" class="form-control" min="1" {% if visit['visit_type'] not in ('جلسه تأهيل','الباقات') %}disabled{% endif %}>
+                        </div>
+                        {% set st = visit['session_time'] or '' %}
+                        <div class="col-4" id="editTimeField{{ visit['id'] }}" {% if visit['visit_type'] not in ('جلسه تأهيل','الباقات') %}style="display:none"{% endif %}>
+                            <label class="form-label"><i class="fas fa-clock text-warning"></i> ميعاد الجلسة</label>
+                            <div style="display:flex;align-items:center;gap:4px;direction:ltr;">
+                                <select name="session_hour" class="form-select" {% if visit['visit_type'] not in ('جلسه تأهيل','الباقات') %}disabled{% endif %} style="flex:1;height:44px;font-size:0.95rem;background:rgba(30,41,59,0.8);border:1px solid rgba(148,163,184,0.15);border-radius:10px;color:#e2e8f0;text-align:center;cursor:pointer;" onchange="combineEditTime({{ visit['id'] }})">
+                                    <option value="12"{% if st[:2]=='12' %} selected{% endif %}>12</option>
+                                    <option value="13"{% if st[:2]=='13' %} selected{% endif %}>1</option>
+                                    <option value="14"{% if st[:2]=='14' %} selected{% endif %}>2</option>
+                                    <option value="15"{% if st[:2]=='15' %} selected{% endif %}>3</option>
+                                    <option value="16"{% if st[:2]=='16' %} selected{% endif %}>4</option>
+                                    <option value="17"{% if st[:2]=='17' %} selected{% endif %}>5</option>
+                                    <option value="18"{% if st[:2]=='18' %} selected{% endif %}>6</option>
+                                    <option value="19"{% if st[:2]=='19' %} selected{% endif %}>7</option>
+                                    <option value="20"{% if st[:2]=='20' %} selected{% endif %}>8</option>
+                                    <option value="21"{% if st[:2]=='21' %} selected{% endif %}>9</option>
+                                    <option value="22"{% if st[:2]=='22' %} selected{% endif %}>10</option>
+                                    <option value="23"{% if st[:2]=='23' %} selected{% endif %}>11</option>
+                                </select>
+                                <span style="color:#64748b;font-weight:700;font-size:1.1rem;">:</span>
+                                <select name="session_minute" class="form-select" {% if visit['visit_type'] not in ('جلسه تأهيل','الباقات') %}disabled{% endif %} style="flex:1;height:44px;font-size:0.95rem;background:rgba(30,41,59,0.8);border:1px solid rgba(148,163,184,0.15);border-radius:10px;color:#e2e8f0;text-align:center;cursor:pointer;" onchange="combineEditTime({{ visit['id'] }})">
+                                    <option value="00"{% if st[3:5]=='00' or st=='' %} selected{% endif %}>00</option>
+                                    <option value="30"{% if st[3:5]=='30' %} selected{% endif %}>30</option>
+                                </select>
+                                <input type="hidden" name="session_time" id="editSessionTime{{ visit['id'] }}" value="{{ visit['session_time'] or '' }}">
+                            </div>
+                        </div>
+                        <script>{% if visit['session_time'] %}combineEditTime({{ visit['id'] }});{% endif %}</script>
+                        <div class="col-4" id="editPackageCountField{{ visit['id'] }}" {% if visit['visit_type'] != 'متابعه' %}style="display:none"{% endif %}>
+                            <label class="form-label"><i class="fas fa-box text-box text-info"></i> عدد جلسات الباقة</label>
+                            <input type="text" class="form-control" value="{{ package_session_count }}" readonly>
+                        </div>
+                        <div class="col-4" id="editSessionNumField{{ visit['id'] }}" {% if visit['visit_type'] != 'متابعه' %}style="display:none"{% endif %}>
+                            <label class="form-label"><i class="fas fa-hashtag text-warning"></i> رقم الجلسة</label>
+                            <input type="text" name="session_count" class="form-control" value="جلسة {{ visit['session_count'] or (follow_up_count + 1) }}" readonly {% if visit['visit_type'] != 'متابعه' %}disabled{% endif %}>
+                        </div>
+                    </div>
+                    <div class="row g-3 mt-3" id="editFinanceFieldsRow{{ visit['id'] }}" {% if visit['visit_type'] == 'متابعه' %}style="display:none"{% endif %}>
+                        <div class="col-4 finance-field">
+                            <label class="form-label"><i class="fas fa-money-bill-wave text-success"></i> المدفوع</label>
+                            <input type="number" name="paid_amount" id="editPaid{{ visit['id'] }}" value="{{ visit['paid_amount'] or 0 }}" class="form-control" min="0" step="1" oninput="editCalc('{{ visit['id'] }}')">
+                        </div>
+                        <div class="col-4 finance-field">
+                            <label class="form-label"><i class="fas fa-hourglass-half text-danger"></i> المتبقي</label>
+                            <input type="number" id="editRem{{ visit['id'] }}" value="{{ visit['remaining_amount'] or 0 }}" class="form-control" readonly
+                                   style="background:rgba(239,68,68,0.08);border-color:rgba(239,68,68,0.3);color:var(--accent-red);font-weight:700;">
+                        </div>
+                        <div class="col-4 finance-field">
+                            <label class="form-label"><i class="fas fa-wallet text-primary"></i> طريقة الدفع</label>
+                            <select name="payment_method" class="form-select">
+                                <option value="نقدي" {% if visit['payment_method'] == 'نقدي' %}selected{% endif %}>نقدي</option>
+                                <option value="فيزا" {% if visit['payment_method'] == 'فيزا' %}selected{% endif %}>فيزا</option>
+                                <option value="فودافون كاش" {% if visit['payment_method'] == 'فودافون كاش' %}selected{% endif %}>فودافون كاش</option>
+                                <option value="انستاباي" {% if visit['payment_method'] == 'انستاباي' %}selected{% endif %}>انستاباي</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="row g-3 mt-3">
+                        <div class="col-12" id="editDaysField{{ visit['id'] }}" {% if visit['visit_type'] not in ('جلسه تأهيل','الباقات') %}style="display:none"{% endif %}>
+                            <label class="form-label"><i class="fas fa-calendar-week text-info"></i> أيام الجلسة</label>
+                            <div class="d-flex gap-2 flex-wrap">
+                                {% set days = ['السبت','الأحد','الإثنين','الثلاثاء','الأربعاء','الخميس','الجمعه'] %}
+                                {% for d in days %}
+                                <label class="day-checkbox">
+                                    <input type="checkbox" name="session_days" value="{{ d }}" {% if visit['session_days'] and d in visit['session_days'] %}checked{% endif %}>
+                                    <span>{{ d }}</span>
+                                </label>
+                                {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer" style="border-top:1px solid rgba(255,255,255,0.08);">
+                <button type="submit" class="btn w-100" style="background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;border:none;border-radius:10px;padding:12px;font-weight:800;font-size:0.95rem;">
+                    <i class="fas fa-save"></i> حفظ التعديلات
+                </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Settlement Modal -->
+<div class="modal fade" id="settleModal{{ visit['id'] }}" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 style="color: var(--accent-green);"><i class="fas fa-hand-holding-usd"></i> تسوية المديونية</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form action="/settle_visit/{{ visit['id'] }}" method="POST">
+                <input type="hidden" name="patient_id" value="{{ patient['id'] }}">
+                <div class="modal-body">
+                    <div class="debt-warning d-flex align-items-center gap-2 mb-3" style="background: rgba(239,68,68,0.12); border-radius: 12px; padding: 12px 16px;">
+                        <i class="fas fa-exclamation-triangle" style="color: var(--accent-red); font-size: 1.1rem; flex-shrink: 0;"></i>
+                        <span style="color: var(--text-main); font-weight: 600;">المتبقي: <strong style="color: var(--accent-red); font-size: 1.1rem;">{{ visit['remaining_amount']|int }} {{ settings['currency'] if settings else 'ج.م' }}</strong></span>
+                    </div>
+                    <div class="row g-3">
+                        <div class="col-6">
+                            <label class="form-label"><i class="fas fa-money-bill-wave text-success"></i> المبلغ المدفوع</label>
+                            <input type="number" name="paid_amount" class="form-control" value="{{ visit['remaining_amount']|int }}" min="0" step="1" required>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label"><i class="fas fa-wallet"></i> طريقة الدفع</label>
+                            <select name="payment_method" class="form-select">
+                                <option value="نقدي">نقدي</option>
+                                <option value="فيزا">فيزا</option>
+                                <option value="فودافون كاش">فودافون كاش</option>
+                                <option value="انستاباي">انستاباي</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">إلغاء</button>
+                    <button type="submit" class="btn btn-success"><i class="fas fa-check-circle"></i> تأكيد التسوية</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Pain Assessment Modal -->
+<div class="modal fade" id="painModal{{ visit['id'] }}" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 style="color: #f87171;"><i class="fas fa-brain"></i> تقييم الألم - {{ visit['visit_date'] }}</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form action="/add_pain_assessment" method="POST">
+                <input type="hidden" name="visit_id" value="{{ visit['id'] }}">
+                <input type="hidden" name="patient_id" value="{{ patient['id'] }}">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">مستوى الألم (0-10) *</label>
+                        <div class="d-flex align-items-center gap-3">
+                            <input type="range" name="pain_score" min="0" max="10" value="5" class="form-range" id="painSlider{{ visit['id'] }}" oninput="document.getElementById('painVal{{ visit['id'] }}').textContent=this.value">
+                            <span id="painVal{{ visit['id'] }}" class="badge" style="font-size:1.2rem;min-width:50px;text-align:center;background:rgba(239,68,68,0.15);color:#f87171;padding:6px 16px;">5</span>
+                        </div>
+                        <div class="d-flex justify-content-between mt-1" style="font-size:0.7rem;color:#cbd5e1;">
+                            <span>✅ لا ألم</span>
+                            <span>⚠️ متوسط</span>
+                            <span>🔴 أقصى ألم</span>
+                        </div>
+                    </div>
+                    <div class="row g-3">
+                        <div class="col-6">
+                            <label class="form-label">مكان الألم</label>
+                            <select name="pain_location" class="form-select">
+                                <option value="">اختر...</option>
+                                <option>الرقبة</option><option>الكتف</option><option>الظهر</option>
+                                <option>أسفل الظهر</option><option>العمود الفقري</option>
+                                <option>الكوع</option><option>الرسغ واليد</option>
+                                <option>مفصل الفخذ / الورك</option><option>الركبة</option>
+                                <option>الكاحل والقدم</option><option>عام</option>
+                            </select>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label">نوع الألم</label>
+                            <select name="pain_type" class="form-select">
+                                <option value="">اختر...</option>
+                                <option>حاد</option><option>مزمن</option><option>مبرح</option>
+                                <option>طعني</option><option>حرقان</option><option>تنميل</option>
+                                <option>خدران</option><option>كهرباء</option><option>ثقل</option>
+                            </select>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label">يزيد مع</label>
+                            <input type="text" name="aggravating_factors" class="form-control" placeholder="الحركة / الجلوس / الوقوف">
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label">يقل مع</label>
+                            <input type="text" name="relieving_factors" class="form-control" placeholder="الراحة / الثلج / الحرارة">
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn w-100" style="background:#f87171;color:white;">
+                        <i class="fas fa-save"></i> حفظ تقييم الألم
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- PT Session Modal -->
+<div class="modal fade" id="ptSessionModal{{ visit['id'] }}" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 style="color: #34d399;"><i class="fas fa-dumbbell"></i> جلسة علاج طبيعي - {{ visit['visit_date'] }}</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form action="/add_pt_session" method="POST">
+                <input type="hidden" name="visit_id" value="{{ visit['id'] }}">
+                <input type="hidden" name="patient_id" value="{{ patient['id'] }}">
+                <div class="modal-body">
+                    <div class="row g-3">
+                        <div class="col-6">
+                            <label class="form-label">نوع العلاج</label>
+                            <select name="treatment_type" class="form-select">
+                                <option value="">اختر...</option>
+                                <option>علاج يدوي</option><option>تمارين علاجية</option>
+                                <option>أجهزة</option><option>تأهيل</option>
+                                <option>علاج طبيعي عام</option><option>علاج مائي</option>
+                            </select>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label">منطقة العلاج</label>
+                            <select name="treatment_area" class="form-select">
+                                <option value="">اختر...</option>
+                                <option>الرقبة</option><option>الكتف</option><option>الظهر</option>
+                                <option>أسفل الظهر</option><option>العمود الفقري</option>
+                                <option>الكوع</option><option>الرسغ واليد</option>
+                                <option>مفصل الفخذ / الورك</option><option>الركبة</option>
+                                <option>الكاحل والقدم</option>
+                            </select>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">الأجهزة المستخدمة</label>
+                            <div class="d-flex flex-wrap gap-2">
+                                {% set modalities = ['موجات فوق صوتية','TENS','ليزر','شد فقري','كاسات هواء','حرارة','برودة','تدليك','تحفيز كهربائي','مغناطيس'] %}
+                                {% for m in modalities %}
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input" type="checkbox" name="modalities_used" value="{{ m }}" id="mod_{{ visit['id'] }}_{{ loop.index }}">
+                                    <label class="form-check-label" for="mod_{{ visit['id'] }}_{{ loop.index }}" style="font-size:0.8rem;color:#cbd5e1;">{{ m }}</label>
+                                </div>
+                                {% endfor %}
+                            </div>
+                            <input type="hidden" name="modalities_used" id="modalitiesHidden{{ visit['id'] }}">
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label">العلاج اليدوي</label>
+                            <textarea name="manual_therapy" class="form-control" rows="2" placeholder="مساج / تقنية ماكنزي / تعبئة مفصلية"></textarea>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label">التمارين العلاجية</label>
+                            <textarea name="therapeutic_exercise" class="form-control" rows="2" placeholder="التمارين المطبقة في الجلسة"></textarea>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label">الألم قبل الجلسة (0-10)</label>
+                            <input type="number" name="pain_before" class="form-control" min="0" max="10" placeholder="5">
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label">الألم بعد الجلسة (0-10)</label>
+                            <input type="number" name="pain_after" class="form-control" min="0" max="10" placeholder="2">
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">استجابة المريض</label>
+                            <select name="patient_response" class="form-select">
+                                <option value="">اختر...</option>
+                                <option>تحسن كبير</option><option>تحسن متوسط</option>
+                                <option>تحسن طفيف</option><option>لا تغيير</option>
+                                <option>ألم زائد</option>
+                            </select>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">ملاحظات</label>
+                            <textarea name="notes" class="form-control" rows="2"></textarea>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn w-100" style="background:#34d399;color:white;">
+                        <i class="fas fa-save"></i> حفظ جلسة العلاج الطبيعي
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endfor %}
+<!-- Add Plan Modal -->
+<div class="modal fade" id="addPlanModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 style="color: #34d399;"><i class="fas fa-clipboard-check"></i> خطة علاج جديدة</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form action="/add_treatment_plan" method="POST">
+                <input type="hidden" name="patient_id" value="{{ patient['id'] }}">
+                <div class="modal-body">
+                    <div class="row g-3">
+                        <div class="col-12">
+                            <label class="form-label">اسم الخطة *</label>
+                            <input type="text" name="plan_name" class="form-control" placeholder="تأهيل الرباط الصليبي" required>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">أهداف الخطة</label>
+                            <textarea name="goals" class="form-control" rows="2" placeholder="تقوية العضلات / تحسين نطاق الحركة / تخفيف الألم"></textarea>
+                        </div>
+                        <div class="col-4">
+                            <label class="form-label">الجلسات الموصى بها</label>
+                            <input type="number" name="recommended_sessions" class="form-control" placeholder="12">
+                        </div>
+                        <div class="col-4">
+                            <label class="form-label">جلسات / أسبوع</label>
+                            <select name="sessions_per_week" class="form-select">
+                                <option value="1">1</option>
+                                <option value="2" selected>2</option>
+                                <option value="3">3</option>
+                                <option value="4">4</option>
+                                <option value="5">5</option>
+                            </select>
+                        </div>
+                        <div class="col-4">
+                            <label class="form-label">بروتوكول تأهيلي</label>
+                            <select name="protocol_ref" class="form-select">
+                                <option value="">بدون</option>
+                                {% for rp in rehab_protocols %}
+                                <option value="{{ rp['id'] }}">{{ rp['name'] }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label">تاريخ البدء</label>
+                            <input type="date" name="start_date" class="form-control" value="{{ datetime.date.today() }}">
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label">تاريخ الانتهاء المتوقع</label>
+                            <input type="date" name="end_date" class="form-control">
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">ملاحظات</label>
+                            <textarea name="notes" class="form-control" rows="2"></textarea>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn w-100" style="background:#34d399;color:white;">
+                        <i class="fas fa-save"></i> حفظ الخطة العلاجية
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Plan Modals -->
+{% for plan in treatment_plans %}
+<div class="modal fade" id="editPlanModal{{ plan['id'] }}" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 style="color: #fbbf24;"><i class="fas fa-edit"></i> تعديل خطة العلاج</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form action="/update_treatment_plan/{{ plan['id'] }}" method="POST">
+                <input type="hidden" name="patient_id" value="{{ patient['id'] }}">
+                <div class="modal-body">
+                    <div class="row g-3">
+                        <div class="col-12">
+                            <label class="form-label">اسم الخطة</label>
+                            <input type="text" name="plan_name" class="form-control" value="{{ plan['plan_name'] }}" required>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">الأهداف</label>
+                            <textarea name="goals" class="form-control" rows="2">{{ plan['goals'] or '' }}</textarea>
+                        </div>
+                        <div class="col-4">
+                            <label class="form-label">الجلسات الموصى بها</label>
+                            <input type="number" name="recommended_sessions" class="form-control" value="{{ plan['recommended_sessions'] or '' }}">
+                        </div>
+                        <div class="col-4">
+                            <label class="form-label">جلسات/أسبوع</label>
+                            <input type="text" name="sessions_per_week" class="form-control" value="{{ plan['sessions_per_week'] or '' }}">
+                        </div>
+                        <div class="col-4">
+                            <label class="form-label">الحالة</label>
+                            <select name="status" class="form-select">
+                                <option value="نشط" {% if plan['status'] == 'نشط' %}selected{% endif %}>نشط</option>
+                                <option value="مكتمل" {% if plan['status'] == 'مكتمل' %}selected{% endif %}>مكتمل</option>
+                                <option value="ملغي" {% if plan['status'] == 'ملغي' %}selected{% endif %}>ملغي</option>
+                            </select>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label">تاريخ البدء</label>
+                            <input type="date" name="start_date" class="form-control" value="{{ plan['start_date'] or '' }}">
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label">تاريخ الانتهاء</label>
+                            <input type="date" name="end_date" class="form-control" value="{{ plan['end_date'] or '' }}">
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">ملاحظات</label>
+                            <textarea name="notes" class="form-control" rows="2">{{ plan['notes'] or '' }}</textarea>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn w-100" style="background:#fbbf24;color:#1e293b;">
+                        <i class="fas fa-save"></i> تحديث الخطة
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endfor %}
+
+<!-- Prescribe Exercise Modal -->
+<div class="modal fade" id="prescribeExModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 style="color: #fbbf24;"><i class="fas fa-running"></i> وصف تمرين للمريض</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form action="/prescribe_exercise" method="POST">
+                <input type="hidden" name="patient_id" value="{{ patient['id'] }}">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">اختر تمرين من المكتبة</label>
+                        <select name="protocol_id" class="form-select" id="exProtocolSelect" onchange="document.getElementById('exCustomName').value=this.options[this.selectedIndex].text; if(this.value) document.getElementById('exCustomGroup').style.display='none';">
+                            <option value="">--- اختر تمرين ---</option>
+                            {% for ep in exercise_protocols %}
+                            <option value="{{ ep['id'] }}">{{ ep['name'] }} {% if ep['targeted_muscles'] %}({{ ep['targeted_muscles'] }}){% endif %}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3" id="exCustomGroup">
+                        <label class="form-label">أو أدخل تمرين مخصص</label>
+                        <input type="text" name="custom_name" id="exCustomName" class="form-control" placeholder="اسم التمرين">
+                    </div>
+                    <div class="row g-3">
+                        <div class="col-6">
+                            <label class="form-label">عدد المجموعات (Sets)</label>
+                            <input type="text" name="sets" class="form-control" placeholder="3">
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label">عدد التكرارات (Reps)</label>
+                            <input type="text" name="reps" class="form-control" placeholder="10-12">
+                        </div>
+                        <div class="col-4">
+                            <label class="form-label">عدد مرات أسبوعياً</label>
+                            <select name="frequency_per_week" class="form-select">
+                                <option value="1">1</option><option value="2" selected>2</option>
+                                <option value="3">3</option><option value="4">4</option>
+                                <option value="5">5</option><option value="6">6</option>
+                                <option value="7">كل يوم</option>
+                            </select>
+                        </div>
+                        <div class="col-4">
+                            <label class="form-label">لمدة (أسابيع)</label>
+                            <input type="number" name="duration_weeks" class="form-control" placeholder="4" min="1">
+                        </div>
+                        <div class="col-4">
+                            <label class="form-label">ارتباط بزيارة</label>
+                            <select name="visit_id" class="form-select">
+                                <option value="">بدون</option>
+                                {% for v in visits %}
+                                <option value="{{ v['id'] }}">{{ v['visit_date'] }} - {{ v['visit_type'] }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label">تعليمات خاصة</label>
+                            <textarea name="instructions" class="form-control" rows="2" placeholder="احتياطات / نصائح"></textarea>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn w-100" style="background:#fbbf24;color:#1e293b;font-weight:700;">
+                        <i class="fas fa-save"></i> وصف التمرين
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Add Visit Modal -->
+<div class="modal fade" id="addVisitModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content" style="border-radius:16px;overflow:hidden;">
+            <div class="modal-header">
+                <h5 style="color: var(--accent-green);"><i class="fas fa-stethoscope"></i> زيارة جديدة: {{ patient['name'] }}</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form action="/add_visit" method="POST">
+                <input type="hidden" name="patient_id" value="{{ patient['id'] }}">
+                <div class="modal-body">
+                    {% if total_debt > 0 %}
+                    <div class="debt-warning d-flex align-items-center gap-2" style="background: rgba(239,68,68,0.12); border-radius: 12px; padding: 12px 16px; margin-bottom: 16px;">
+                        <i class="fas fa-exclamation-triangle" style="color: var(--accent-red); font-size: 1.2rem; flex-shrink: 0;"></i>
+                        <div>
+                            <strong style="color: var(--accent-red); font-size: 1.1rem; text-shadow: 0 0 8px rgba(239,68,68,0.3);">تنبيه: على المريض مديونية {{ total_debt|int }} {{ settings['currency'] if settings else 'ج.م' }}</strong>
+                            <br>
+                            <button type="button" class="btn btn-success btn-sm mt-1" onclick="var m1 = bootstrap.Modal.getOrCreateInstance(document.getElementById('addVisitModal')); if(m1) m1.hide(); var m2 = bootstrap.Modal.getOrCreateInstance(document.getElementById('settleModal{{ first_unpaid_visit }}')); if(m2) m2.show();">
+                                <i class="fas fa-hand-holding-usd"></i> تسوية المديونية
+                            </button>
+                        </div>
+                    </div>
+                    {% endif %}
+                    <div class="row g-3">
+                        <div class="col-4">
+                            <label class="form-label"><i class="fas fa-calendar text-info"></i> التاريخ</label>
+                            <input type="date" name="visit_date" class="form-control" value="{{ datetime.date.today().strftime('%Y-%m-%d') }}">
+                        </div>
+                        <div class="col-4">
+                            <label class="form-label"><i class="fas fa-list-alt text-info"></i> نوع الجلسة</label>
+                            <select name="visit_type" class="form-select" data-first-visit="{{ first_visit_type }}" data-package-count="{{ package_session_count }}" data-followup-count="{{ follow_up_count }}" onchange="onVisitTypeChange(this, {{ patient['id'] }}, {{ follow_up_count }}, {{ package_session_count }})">
+                                <option value="جلسه علاج طبيعي">جلسه علاج طبيعي</option>
+                                <option value="جلسه تأهيل">جلسه تأهيل</option>
+                                <option value="حجامه جافه">حجامه جافه</option>
+                                <option value="حجامه دموية">حجامه دموية</option>
+                                <option value="جلسه علاج طبيعي خاص">جلسه علاج طبيعي خاص</option>
+                                <option value="الباقات">الباقات</option>
+                                <option value="متابعه">متابعه</option>
+                                <option value="التغذية">التغذية</option>
+                            </select>
+                        </div>
+                        <div class="col-4" id="addOriginalTypeField{{ patient['id'] }}" style="display:none">
+                            <label class="form-label"><i class="fas fa-history text-info"></i> نوع الجلسة الأساسيه</label>
+                            <input type="text" class="form-control" value="{{ first_visit_type }}" readonly disabled style="font-weight:600;">
+                        </div>
+                        <div class="col-4" id="addCostField{{ patient['id'] }}">
+                            <label class="form-label"><i class="fas fa-tag text-warning"></i> التكلفة</label>
+                            <input type="number" name="cost" id="costField{{ patient['id'] }}" class="form-control" placeholder="0" min="0" step="1" required oninput="calcRem('{{ patient['id'] }}')">
+                        </div>
+                    </div>
+                    <div id="addFollowUpMode{{ patient['id'] }}" style="display:none">
+                        <input type="hidden" name="visit_type" value="متابعه">
+                        <div class="row g-3 mt-1" id="addFollowUpExtraRow{{ patient['id'] }}">
+                                <div class="col-6" id="addPackageCountField{{ patient['id'] }}">
+                                    <label class="form-label"><i class="fas fa-box text-info"></i> إجمالي الجلسات</label>
+                                    <input type="text" class="form-control" value="{{ package_session_count }}" readonly>
+                                </div>
+                            <div class="col-6" id="addSessionNumField{{ patient['id'] }}">
+                                <label class="form-label"><i class="fas fa-hashtag text-warning"></i> رقم الجلسة</label>
+                                <div style="display:flex;align-items:center;gap:4px;">
+                                    <span class="form-control" style="flex:1;background:rgba(30,41,59,0.8);border:1px solid rgba(148,163,184,0.15);border-radius:10px;padding:6px 12px;color:var(--text-main);opacity:0.7;">جلسة {{ follow_up_count + (2 if first_visit_type == 'جلسه تأهيل' else 1) }}</span>
+                                    <input type="hidden" name="session_count" value="جلسة {{ follow_up_count + (2 if first_visit_type == 'جلسه تأهيل' else 1) }}">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row g-3 mt-1">
+                        <div class="col-4" id="addSessionField{{ patient['id'] }}" style="display:none">
+                            <label class="form-label"><i class="fas fa-sort-numeric-up text-primary"></i> عدد الجلسات</label>
+                            <input type="number" name="session_count" class="form-control" placeholder="1" min="1" value="1" disabled>
+                        </div>
+                        <div class="col-4" id="addTimeField{{ patient['id'] }}" style="display:none">
+                            <label class="form-label"><i class="fas fa-clock text-warning"></i> ميعاد الجلسة</label>
+                            <div style="display:flex;align-items:center;gap:4px;direction:ltr;">
+                                <select name="session_hour" class="form-select" disabled style="flex:1;height:44px;font-size:0.95rem;background:rgba(30,41,59,0.8);border:1px solid rgba(148,163,184,0.15);border-radius:10px;color:#e2e8f0;text-align:center;cursor:pointer;">
+                                    <option value="12">12</option>
+                                    <option value="13">1</option>
+                                    <option value="14">2</option>
+                                    <option value="15">3</option>
+                                    <option value="16">4</option>
+                                    <option value="17">5</option>
+                                    <option value="18">6</option>
+                                    <option value="19">7</option>
+                                    <option value="20">8</option>
+                                    <option value="21">9</option>
+                                    <option value="22">10</option>
+                                    <option value="23">11</option>
+                                </select>
+                                <span style="color:#64748b;font-weight:700;font-size:1.1rem;">:</span>
+                                <select name="session_minute" class="form-select" disabled style="flex:1;height:44px;font-size:0.95rem;background:rgba(30,41,59,0.8);border:1px solid rgba(148,163,184,0.15);border-radius:10px;color:#e2e8f0;text-align:center;cursor:pointer;">
+                                    <option value="00">00</option>
+                                    <option value="30">30</option>
+                                </select>
+                                <input type="hidden" name="session_time" id="sessionTime{{ patient['id'] }}">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="row g-3 mt-3" id="addFinanceFieldsRow{{ patient['id'] }}">
+                        <div class="col-4 finance-field">
+                            <label class="form-label"><i class="fas fa-money-bill-wave text-success"></i> المدفوع</label>
+                            <input type="number" name="paid_amount" id="paidField{{ patient['id'] }}" class="form-control" placeholder="0" min="0" step="1" oninput="calcRem('{{ patient['id'] }}')">
+                        </div>
+                        <div class="col-4 finance-field">
+                            <label class="form-label"><i class="fas fa-hourglass-half text-danger"></i> المتبقي</label>
+                            <input type="number" id="remField{{ patient['id'] }}" class="form-control" placeholder="0" readonly
+                                   style="background: rgba(239,68,68,0.08); border-color: rgba(239,68,68,0.3); color: var(--accent-red); font-weight: 700;">
+                        </div>
+                        <div class="col-4 finance-field">
+                            <label class="form-label"><i class="fas fa-wallet text-primary"></i> طريقة الدفع</label>
+                            <select name="payment_method" class="form-select">
+                                <option value="نقدي">نقدي</option>
+                                <option value="فيزا">فيزا</option>
+                                <option value="فودافون كاش">فودافون كاش</option>
+                                <option value="انستاباي">انستاباي</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="row g-3 mt-3">
+                        <div class="col-12" id="addDaysField{{ patient['id'] }}" style="display:none">
+                            <label class="form-label"><i class="fas fa-calendar-week text-info"></i> أيام الجلسة</label>
+                            <div class="d-flex gap-2 flex-wrap">
+                                {% set days = ['السبت','الأحد','الإثنين','الثلاثاء','الأربعاء','الخميس','الجمعه'] %}
+                                {% for d in days %}
+                                <label class="day-checkbox">
+                                    <input type="checkbox" name="session_days" value="{{ d }}">
+                                    <span>{{ d }}</span>
+                                </label>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-success w-100">
+                        <i class="fas fa-save"></i> حفظ الزيارة
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+
+
+<!-- Exercise Library Modal -->
+<div class="modal fade" id="exLibraryModal" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 style="color: #a78bfa;"><i class="fas fa-dumbbell"></i> مكتبة التمارين العلاجية</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <form action="/add_exercise_protocol" method="POST" class="row g-2">
+                        <div class="col-4"><input type="text" name="name" class="form-control" placeholder="اسم التمرين *" required></div>
+                        <div class="col-4"><input type="text" name="targeted_muscles" class="form-control" placeholder="العضلات المستهدفة"></div>
+                        <div class="col-2">
+                            <select name="difficulty" class="form-select">
+                                <option value="مبتدئ">مبتدئ</option>
+                                <option value="متوسط" selected>متوسط</option>
+                                <option value="متقدم">متقدم</option>
+                            </select>
+                        </div>
+                        <div class="col-2"><button type="submit" class="btn w-100" style="background:#a78bfa;color:white;"><i class="fas fa-plus"></i> إضافة</button></div>
+                        <div class="col-12"><textarea name="description" class="form-control" rows="1" placeholder="وصف التمرين"></textarea></div>
+                        <div class="col-6"><input type="text" name="instructions" class="form-control" placeholder="تعليمات الأداء"></div>
+                        <div class="col-6"><input type="text" name="precautions" class="form-control" placeholder="احتياطات"></div>
+                    </form>
+                </div>
+                <hr style="border-color:rgba(148,163,184,0.1);">
+                <div class="d-flex flex-wrap gap-2">
+                    {% for ep in exercise_protocols %}
+                    <div style="background:rgba(30,41,59,0.8);border-radius:10px;border:1px solid rgba(148,163,184,0.1);padding:10px 14px;flex:1 1 200px;">
+                        <div><strong style="color:#e2e8f0;font-size:0.9rem;">{{ ep['name'] }}</strong></div>
+                        {% if ep['targeted_muscles'] %}<div style="color:#cbd5e1;font-size:0.75rem;"><i class="fas fa-bolt"></i> {{ ep['targeted_muscles'] }}</div>{% endif %}
+                        <div style="color:#cbd5e1;font-size:0.72rem;">
+                            <span class="badge" style="background:rgba(139,92,246,0.12);color:#a78bfa;">{{ ep['difficulty'] }}</span>
+                        </div>
+                        <div class="mt-1">
+                            <a href="/delete_exercise_protocol/{{ ep['id'] }}" class="btn btn-sm py-0 px-1" style="background:rgba(239,68,68,0.1);color:#f87171;border:none;border-radius:4px;font-size:0.65rem;" onclick="return confirm('حذف التمرين من المكتبة؟')"><i class="fas fa-trash"></i></a>
+                        </div>
+                    </div>
+                    {% else %}
+                    <div style="color:#cbd5e1;text-align:center;width:100%;padding:20px;">
+                        <i class="fas fa-dumbbell" style="font-size:2rem;display:block;opacity:0.3;margin-bottom:8px;"></i>
+                        المكتبة فارغة — أضف تمارين
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Rehab Protocols Section -->
+<script>
+function addMedRow(vid) {
+    var container = document.getElementById('medsContainer' + vid);
+    if (!container) return;
+    var rows = container.querySelectorAll('.med-row');
+    if (!rows.length) return;
+    var count = rows.length + 1;
+    var row = rows[0].cloneNode(true);
+    row.querySelectorAll('input, textarea').forEach(function(el) { el.value = ''; });
+    var span = row.querySelector('.d-flex span');
+    if (span) span.innerHTML = '<i class="fas fa-capsules"></i> \u0627\u0644\u062f\u0648\u0627\u0621 ' + count;
+    var btn = row.querySelector('.d-flex button');
+    if (btn) btn.style.display = 'inline-block';
+    container.appendChild(row);
+}
+function addEditMedRow(vid) {
+    var container = document.getElementById('editMedsContainer' + vid);
+    if (!container) { addMedRow(vid); return; }
+    var rows = container.querySelectorAll('.med-row');
+    if (!rows.length) return;
+    var count = rows.length + 1;
+    var row = rows[0].cloneNode(true);
+    row.querySelectorAll('input, textarea').forEach(function(el) { el.value = ''; });
+    var span = row.querySelector('.d-flex span');
+    if (span) span.innerHTML = '<i class="fas fa-capsules"></i> \u0627\u0644\u062f\u0648\u0627\u0621 ' + count;
+    var btn = row.querySelector('.d-flex button');
+    if (btn) btn.style.display = 'inline-block';
+    container.appendChild(row);
+}
+function renumberMeds(vid) {
+    ['medsContainer', 'editMedsContainer'].forEach(function(prefix) {
+        var container = document.getElementById(prefix + vid);
+        if (!container) return;
+        container.querySelectorAll('.med-row .d-flex span').forEach(function(el, i) {
+            el.innerHTML = '<i class="fas fa-capsules"></i> \u0627\u0644\u062f\u0648\u0627\u0621 ' + (i + 1);
+        });
+    });
+}
+function scrollToVisit(visitId) {
+    var el = document.getElementById('visit-' + visitId);
+    if (el) { el.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
+}
+function toggleVisit(visitId) {
+    var collapse = document.getElementById('collapse-' + visitId);
+    var toggle = document.getElementById('toggle-' + visitId);
+    if (!collapse) return;
+    var closed = collapse.classList.toggle('closed');
+    if (toggle) toggle.classList.toggle('collapsed');
+}
+function printMedicalRecord() {
+    window.print();
+}
+
+
+function calcRem(pid) {
+    var cost = parseFloat(document.getElementById('costField'+pid).value) || 0;
+    var paid = parseFloat(document.getElementById('paidField'+pid).value) || 0;
+    if (paid > cost) { document.getElementById('paidField'+pid).value = cost; paid = cost; }
+    var rem = cost - paid;
+    var el = document.getElementById('remField'+pid);
+    el.value = rem >= 0 ? Math.round(rem) : '0';
+    el.style.color = rem > 0 ? 'var(--accent-red)' : 'var(--accent-green)';
+    el.style.borderColor = rem > 0 ? 'rgba(239,68,68,0.4)' : 'rgba(16,185,129,0.4)';
+}
+function editCalc(vid) {
+    var cost = parseFloat(document.getElementById('editCost'+vid).value) || 0;
+    var paid = parseFloat(document.getElementById('editPaid'+vid).value) || 0;
+    if (paid > cost) { document.getElementById('editPaid'+vid).value = cost; paid = cost; }
+    var rem = cost - paid;
+    var el = document.getElementById('editRem'+vid);
+    el.value = rem >= 0 ? Math.round(rem) : '0';
+    el.style.color = rem > 0 ? 'var(--accent-red)' : 'var(--accent-green)';
+    el.style.borderColor = rem > 0 ? 'rgba(239,68,68,0.4)' : 'rgba(16,185,129,0.4)';
+}
+
+function onVisitTypeChange(selectEl, pid, followUpCount, pkgCount) {
+    var followUpMode = document.getElementById('addFollowUpMode' + pid);
+    var sessionField = document.getElementById('addSessionField' + pid);
+    var daysField = document.getElementById('addDaysField' + pid);
+    var financeRow = document.getElementById('addFinanceFieldsRow' + pid);
+    var timeField = document.getElementById('addTimeField' + pid);
+    var sessionInput = sessionField ? sessionField.querySelector('input') : null;
+    var origField = document.getElementById('addOriginalTypeField' + pid);
+    var costField = document.getElementById('costField' + pid);
+    var costContainer = document.getElementById('addCostField' + pid);
+    if (selectEl.value === 'متابعه') {
+        if (followUpMode) followUpMode.style.display = '';
+        if (origField) origField.style.display = '';
+        if (costContainer) costContainer.style.display = 'none';
+        if (sessionField) sessionField.style.display = 'none';
+        if (sessionInput) sessionInput.disabled = true;
+        if (daysField) daysField.style.display = 'none';
+        if (financeRow) financeRow.style.display = 'none';
+        if (timeField) { timeField.style.display = 'none'; timeField.querySelectorAll('select').forEach(function(s){s.disabled=true;}); }
+        if (costField) costField.disabled = true;
+        var paidField = document.getElementById('paidField' + pid);
+        if (paidField) { paidField.disabled = true; paidField.value = 0; }
+        var extraRow = document.getElementById('addFollowUpExtraRow' + pid);
+        if (origField && extraRow) {
+            var inp = origField.querySelector('input');
+            if (inp) {
+                extraRow.style.display = (inp.value === '\u062C\u0644\u0633\u0647 \u062A\u0623\u0647\u064A\u0644' || inp.value === '\u0627\u0644\u0628\u0627\u0642\u0627\u062A') ? '' : 'none';
+            }
+        }
+    } else {
+        if (followUpMode) followUpMode.style.display = 'none';
+        if (origField) origField.style.display = 'none';
+        if (costContainer) costContainer.style.display = '';
+        if (sessionField) sessionField.style.display = 'none';
+        if (sessionInput) sessionInput.disabled = true;
+        if (daysField) daysField.style.display = 'none';
+        if (financeRow) financeRow.style.display = '';
+        if (timeField) { timeField.style.display = 'none'; timeField.querySelectorAll('select').forEach(function(s){s.disabled=true;}); }
+        if (costField) costField.disabled = false;
+        var paidField = document.getElementById('paidField' + pid);
+        if (paidField) paidField.disabled = false;
+    }
+    if (selectEl.value === 'الباقات') {
+        if (sessionField) {
+            sessionField.style.display = '';
+            if (sessionInput) { sessionInput.readOnly = false; sessionInput.disabled = false; }
+        }
+        if (daysField) daysField.style.display = '';
+        if (timeField) {
+            timeField.style.display = '';
+            timeField.querySelectorAll('select').forEach(function(s){s.disabled=false;});
+            initTimeFields(pid);
+        }
+    } else if (selectEl.value === 'جلسه تأهيل') {
+        if (sessionField) {
+            sessionField.style.display = '';
+            if (sessionInput) { sessionInput.readOnly = false; sessionInput.disabled = false; }
+        }
+        if (daysField) daysField.style.display = '';
+        if (timeField) {
+            timeField.style.display = '';
+            timeField.querySelectorAll('select').forEach(function(s){s.disabled=false;});
+            initTimeFields(pid);
+        }
+    }
+}
+
+function initTimeFields(pid) {
+    var hourEl = document.querySelector('#addTimeField' + pid + ' select[name="session_hour"]');
+    var minEl = document.querySelector('#addTimeField' + pid + ' select[name="session_minute"]');
+    var hiddenEl = document.getElementById('sessionTime' + pid);
+    function combine() {
+        var h = hourEl ? hourEl.value : '';
+        var m = minEl ? minEl.value : '00';
+        if (hiddenEl) hiddenEl.value = h ? h + ':' + m : '';
+    }
+    if (hourEl) hourEl.addEventListener('change', combine);
+    if (minEl) minEl.addEventListener('change', combine);
+    combine();
+}
+
+function combineEditTime(vid) {
+    var hourEl = document.querySelector('#editTimeField' + vid + ' select[name="session_hour"]');
+    var minEl = document.querySelector('#editTimeField' + vid + ' select[name="session_minute"]');
+    var hiddenEl = document.getElementById('editSessionTime' + vid);
+    if (hiddenEl) {
+        var h = hourEl ? hourEl.value : '';
+        var m = minEl ? minEl.value : '00';
+        hiddenEl.value = h ? h + ':' + m : '';
+    }
+}
+
+function onEditVisitTypeChange(selectEl, vid, followUpCount, pkgCount) {
+    var sessionField = document.getElementById('editSessionField' + vid);
+    var daysField = document.getElementById('editDaysField' + vid);
+    var timeField = document.getElementById('editTimeField' + vid);
+    var costField = document.getElementById('editCostField' + vid);
+    var pkgCountField = document.getElementById('editPackageCountField' + vid);
+    var sessionNumField = document.getElementById('editSessionNumField' + vid);
+    var financeRow = document.getElementById('editFinanceFieldsRow' + vid);
+    var costInput = document.getElementById('editCost' + vid);
+    var sessionInput = sessionField ? sessionField.querySelector('input') : null;
+    var sessionNumInput = sessionNumField ? sessionNumField.querySelector('input') : null;
+    if (selectEl.value === 'متابعه') {
+        if (sessionField) sessionField.style.display = 'none';
+        if (sessionInput) sessionInput.disabled = true;
+        if (pkgCountField) pkgCountField.style.display = '';
+        if (sessionNumField) sessionNumField.style.display = '';
+        if (sessionNumInput) sessionNumInput.disabled = false;
+        if (costField) costField.style.display = 'none';
+        if (costInput) { costInput.required = false; costInput.value = 0; }
+        if (daysField) daysField.style.display = 'none';
+        if (timeField) { timeField.style.display = 'none'; timeField.querySelectorAll('select').forEach(function(s){s.disabled=true;}); }
+        if (financeRow) financeRow.style.display = 'none';
+    } else if (selectEl.value === 'الباقات') {
+        if (sessionField) {
+            sessionField.style.display = '';
+            if (sessionInput) { sessionInput.readOnly = false; sessionInput.disabled = false; }
+        }
+        if (pkgCountField) pkgCountField.style.display = 'none';
+        if (sessionNumField) sessionNumField.style.display = 'none';
+        if (sessionNumInput) sessionNumInput.disabled = true;
+        if (costField) costField.style.display = '';
+        if (costInput) costInput.required = true;
+        if (daysField) daysField.style.display = '';
+        if (timeField) { timeField.style.display = ''; timeField.querySelectorAll('select').forEach(function(s){s.disabled=false;}); combineEditTime(vid); }
+        if (financeRow) financeRow.style.display = '';
+    } else if (selectEl.value === 'جلسه تأهيل') {
+        if (sessionField) {
+            sessionField.style.display = '';
+            if (sessionInput) { sessionInput.readOnly = false; sessionInput.disabled = false; }
+        }
+        if (pkgCountField) pkgCountField.style.display = 'none';
+        if (sessionNumField) sessionNumField.style.display = 'none';
+        if (sessionNumInput) sessionNumInput.disabled = true;
+        if (costField) costField.style.display = '';
+        if (costInput) costInput.required = true;
+        if (daysField) daysField.style.display = '';
+        if (timeField) { timeField.style.display = ''; timeField.querySelectorAll('select').forEach(function(s){s.disabled=false;}); combineEditTime(vid); }
+        if (financeRow) financeRow.style.display = '';
+    } else {
+        if (sessionField) sessionField.style.display = 'none';
+        if (sessionInput) sessionInput.disabled = true;
+        if (pkgCountField) pkgCountField.style.display = 'none';
+        if (sessionNumField) sessionNumField.style.display = 'none';
+        if (sessionNumInput) sessionNumInput.disabled = true;
+        if (costField) costField.style.display = '';
+        if (costInput) costInput.required = true;
+        if (daysField) daysField.style.display = 'none';
+        if (timeField) { timeField.style.display = 'none'; timeField.querySelectorAll('select').forEach(function(s){s.disabled=true;}); }
+        if (financeRow) financeRow.style.display = '';
+    }
+}
+
+{% if pain_assessments|length > 1 %}
+(function() {
+    var canvas = document.getElementById('painTrendChart');
+    if (!canvas) return;
+    var ctx = canvas.getContext('2d');
+    var W = canvas.parentElement.offsetWidth;
+    var H = 180;
+    canvas.width = W * 2; canvas.height = H * 2;
+    canvas.style.width = W + 'px'; canvas.style.height = H + 'px';
+    ctx.scale(2, 2);
+
+    var painData = [
+        {% for pa in pain_assessments|reverse %}
+        { score: {{ pa['pain_score'] }}, date: '{{ pa['assessed_at'][:10] if pa['assessed_at'] else "" }}' },
+        {% endfor %}
+    ];
+    if (painData.length < 2) return;
+
+    var maxScore = 10, minScore = 0;
+    var pad = { top: 15, bottom: 20, left: 25, right: 15 };
+    var chartW = W - pad.left - pad.right;
+    var chartH = H - pad.top - pad.bottom;
+    var yRange = maxScore - minScore;
+
+    function yPos(score) { return pad.top + chartH - ((score - minScore) / yRange * chartH); }
+    function xPos(i) { return pad.left + (i / (painData.length - 1)) * chartW; }
+
+    // Grid lines
+    ctx.strokeStyle = 'rgba(148,163,184,0.08)';
+    ctx.lineWidth = 1;
+    for (var s = 0; s <= 10; s += 2) {
+        var yy = yPos(s);
+        ctx.beginPath(); ctx.moveTo(pad.left, yy); ctx.lineTo(W - pad.right, yy); ctx.stroke();
+        ctx.fillStyle = '#64748b';
+        ctx.font = '9px sans-serif';
+        ctx.textAlign = 'right';
+        ctx.fillText(s + '', pad.left - 4, yy + 3);
+    }
+
+    // Area fill
+    ctx.beginPath();
+    ctx.moveTo(xPos(0), yPos(painData[0].score));
+    for (var i = 1; i < painData.length; i++) ctx.lineTo(xPos(i), yPos(painData[i].score));
+    ctx.lineTo(xPos(painData.length - 1), H - pad.bottom);
+    ctx.lineTo(xPos(0), H - pad.bottom);
+    ctx.closePath();
+    var grad = ctx.createLinearGradient(0, pad.top, 0, H - pad.bottom);
+    grad.addColorStop(0, 'rgba(239,68,68,0.2)');
+    grad.addColorStop(1, 'rgba(239,68,68,0.01)');
+    ctx.fillStyle = grad;
+    ctx.fill();
+
+    // Line
+    ctx.beginPath();
+    ctx.moveTo(xPos(0), yPos(painData[0].score));
+    for (var i = 1; i < painData.length; i++) ctx.lineTo(xPos(i), yPos(painData[i].score));
+    ctx.strokeStyle = '#f87171';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    // Dots
+    for (var i = 0; i < painData.length; i++) {
+        var cx = xPos(i), cy = yPos(painData[i].score);
+        ctx.beginPath();
+        ctx.arc(cx, cy, 3, 0, Math.PI * 2);
+        ctx.fillStyle = '#f87171';
+        ctx.fill();
+        ctx.strokeStyle = '#1e293b';
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+    }
+
+    // Threshold zones
+    ctx.fillStyle = 'rgba(52,211,153,0.04)';
+    ctx.fillRect(pad.left, yPos(3), chartW, yPos(0) - yPos(3));
+    ctx.fillStyle = 'rgba(245,158,11,0.04)';
+    ctx.fillRect(pad.left, yPos(6), chartW, yPos(3) - yPos(6));
+    ctx.fillStyle = 'rgba(239,68,68,0.04)';
+    ctx.fillRect(pad.left, yPos(10), chartW, yPos(6) - yPos(10));
+
+    // Labels
+    ctx.fillStyle = '#64748b';
+    ctx.font = '8px sans-serif';
+    ctx.textAlign = 'center';
+    var step = Math.max(1, Math.floor(painData.length / 6));
+    for (var i = 0; i < painData.length; i += step) {
+        ctx.fillText(painData[i].date.slice(5), xPos(i), H - 3);
+    }
+})();
+{% endif %}
+
+// فتح نافذة تسجيل الحضور تلقائياً عند طلبها من رابط جدول المواعيد
+document.addEventListener("DOMContentLoaded", function() {
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('action') === 'add_followup') {
+        const addVisitModalEl = document.getElementById('addVisitModal');
+        if (addVisitModalEl) {
+            const addVisitModal = bootstrap.Modal.getOrCreateInstance(addVisitModalEl);
+            if (addVisitModal) {
+                const selectEl = addVisitModalEl.querySelector('select[name="visit_type"]');
+                if (selectEl) {
+                    var pkgCount = parseInt(selectEl.getAttribute('data-package-count') || '0', 10);
+                    var fuCount = parseInt(selectEl.getAttribute('data-followup-count') || '0', 10);
+                    if (pkgCount > 0 && fuCount > 0) {
+                        selectEl.value = 'متابعه';
+                        if (typeof onVisitTypeChange === 'function') {
+                            onVisitTypeChange(selectEl, {{ patient['id'] }}, {{ follow_up_count }}, {{ package_session_count }});
+                        }
+                    }
+                }
+                addVisitModal.show();
+            }
+        }
+    }
+});
+
+// Auto-select متابعه when patient has active package/rehab/nutrition
+document.addEventListener('shown.bs.modal', function(e) {
+    if (e.target.id !== 'addVisitModal') return;
+    var select = e.target.querySelector('select[name="visit_type"]');
+    if (!select || select.getAttribute('data-auto-done')) return;
+    var fv = select.getAttribute('data-first-visit');
+    var pkgCount = parseInt(select.getAttribute('data-package-count') || '0', 10);
+    var fuCount = parseInt(select.getAttribute('data-followup-count') || '0', 10);
+    if (fv && ['الباقات','جلسه تأهيل','التغذية'].includes(fv) && pkgCount > 0 && fuCount > 0) {
+        select.setAttribute('data-auto-done', '1');
+        select.value = 'متابعه';
+        select.dispatchEvent(new Event('change'));
+    }
+});
+</script>
+
+<style>#settleDialog::backdrop{background:rgba(0,0,0,0.6)}</style>
+<dialog id="settleDialog" style="background:#1e293b;border:1px solid rgba(148,163,184,0.15);border-radius:16px;padding:28px;color:#f8fafc;max-width:380px;width:90vw;">
+    <h5 style="color:#34d399;margin:0 0 6px;font-weight:800;"><i class="fas fa-hand-holding-usd"></i> تسوية المديونية</h5>
+    <div style="color:#94a3b8;font-size:0.82rem;margin-bottom:16px;" id="settleDlgRemaining"></div>
+    <form id="settleDlgForm" action="" method="POST">
+        <input type="hidden" name="patient_id" id="settleDlgPatientId">
+        <div style="margin-bottom:12px;">
+            <label style="color:#cbd5e1;font-size:0.82rem;font-weight:600;display:block;margin-bottom:4px;">المبلغ المدفوع</label>
+            <input type="number" name="paid_amount" id="settleDlgAmount" class="form-control" min="0" step="1" required>
+        </div>
+        <div style="margin-bottom:16px;">
+            <label style="color:#cbd5e1;font-size:0.82rem;font-weight:600;display:block;margin-bottom:4px;">طريقة الدفع</label>
+            <select name="payment_method" class="form-select">
+                <option value="نقدي">نقدي</option>
+                <option value="فيزا">فيزا</option>
+                <option value="فودافون كاش">فودافون كاش</option>
+                <option value="انستاباي">انستاباي</option>
+            </select>
+        </div>
+        <div style="display:flex;gap:10px;">
+            <button type="button" onclick="document.getElementById('settleDialog').close()" style="flex:1;padding:10px;border-radius:10px;font-weight:700;border:none;cursor:pointer;background:rgba(148,163,184,0.1);color:#94a3b8;">إلغاء</button>
+            <button type="submit" style="flex:1;padding:10px;border-radius:10px;font-weight:700;border:none;cursor:pointer;background:#34d399;color:#fff;">تأكيد التسوية</button>
+        </div>
+    </form>
+</dialog>
+
+<script>
+function showSettleDialog(visitId, amount, patientId) {
+    document.getElementById('settleDlgRemaining').textContent = '\u0627\u0644\u0645\u062A\u0628\u0642\u064A: ' + amount + ' \u062C.\u0645';
+    document.getElementById('settleDlgAmount').value = amount;
+    document.getElementById('settleDlgPatientId').value = patientId;
+    document.getElementById('settleDlgForm').action = '/settle_visit/' + visitId;
+    document.getElementById('settleDialog').showModal();
+}
+</script>
+{% endblock %}
