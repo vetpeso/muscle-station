@@ -522,7 +522,7 @@
         /* ── Sidebar base: hidden off-screen on mobile ── */
         .sidebar {
             position: fixed !important;
-            right: -300px;
+            right: -300px !important;
             top: 0; bottom: 0;
             width: 280px !important;
             height: 100vh;
@@ -699,10 +699,9 @@
             margin: 0;
         }
 
-        /* Ensure sidebar stays fixed during htmx swaps */
+        /* Ensure sidebar stays fixed during htmx swaps (mobile-aware) */
         .sidebar {
             position: fixed !important;
-            right: 0;
             top: 0;
             height: 100vh;
             z-index: 1000;
