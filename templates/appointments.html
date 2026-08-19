@@ -278,47 +278,49 @@
         color: #ef4444;
     }
 
+    .call-group {
+        display: inline-flex;
+        align-items: center;
+        gap: 0;
+        border-radius: 10px;
+        overflow: hidden;
+        border: 1px solid var(--border-color);
+    }
     .call-btn {
         display: inline-flex;
         align-items: center;
-        gap: 6px;
-        padding: 6px 14px;
-        border-radius: 10px;
+        gap: 5px;
+        padding: 7px 14px;
         font-weight: 700;
-        font-size: 0.85rem;
-        border: 1px solid rgba(34,197,94,0.3);
-        background: rgba(34,197,94,0.08);
-        color: #22c55e;
+        font-size: 0.82rem;
+        border: none;
         cursor: pointer;
         transition: all 0.2s ease;
         text-decoration: none;
+        white-space: nowrap;
     }
-    .call-btn:hover {
-        background: rgba(34,197,94,0.18);
-        border-color: #22c55e;
+    .call-answered {
+        background: rgba(34,197,94,0.08);
         color: #22c55e;
-        text-decoration: none;
+        border-right: 1px solid rgba(255,255,255,0.08);
     }
-    .call-btn.called {
+    .call-answered:hover {
         background: rgba(34,197,94,0.2);
-        border-color: #22c55e;
-        color: #22c55e;
-        box-shadow: 0 0 10px rgba(34,197,94,0.15);
     }
-    .call-btn.called i {
-        animation: none;
+    .call-answered.active {
+        background: rgba(34,197,94,0.25);
+        box-shadow: inset 0 -3px 0 #22c55e;
     }
-    .call-check {
-        display: inline-flex;
-        align-items: center;
-        gap: 4px;
-        font-size: 0.8rem;
-        font-weight: 800;
-        color: #22c55e;
-        padding: 4px 10px;
-        background: rgba(34,197,94,0.12);
-        border-radius: 8px;
-        border: 1px solid rgba(34,197,94,0.25);
+    .call-not-answered {
+        background: rgba(239,68,68,0.08);
+        color: #f87171;
+    }
+    .call-not-answered:hover {
+        background: rgba(239,68,68,0.2);
+    }
+    .call-not-answered.active {
+        background: rgba(239,68,68,0.25);
+        box-shadow: inset 0 -3px 0 #f87171;
     }
 
     .collapse-header-btn {
@@ -546,15 +548,19 @@
                             </span>
                             {% endif %}
                         </div>
-                        <div class="mb-2 d-flex align-items-center gap-2">
+                        <div class="mb-2 d-flex align-items-center gap-2 flex-wrap">
                             <a href="tel:{{ p.phone }}" class="phone-link" style="font-size: 0.95rem;">
                                 <i class="fas fa-phone text-success" style="font-size: 0.8rem; margin-left: 2px;"></i>
                                 {{ p.phone }}
                             </a>
-                            <button type="button" class="call-btn {% if called_patients.get(p.id) %}called{% endif %}" onclick="markCalled({{ p.id }}, '{{ selected_day_date }}', this)" style="font-size: 0.78rem; padding: 4px 10px;">
-                                <i class="fas {% if called_patients.get(p.id) %}fa-check-circle{% else %}fa-phone{% endif %}"></i>
-                                <span class="call-label">{% if called_patients.get(p.id) %}تم{% else %}اتصلت؟{% endif %}</span>
-                            </button>
+                            <div class="call-group" data-patient="{{ p.id }}">
+                                <button type="button" class="call-btn call-answered {% if called_patients.get(p.id) == 1 %}active{% endif %}" onclick="setCallStatus({{ p.id }}, '{{ selected_day_date }}', 1, this)">
+                                    <i class="fas fa-check"></i> تم الرد
+                                </button>
+                                <button type="button" class="call-btn call-not-answered {% if called_patients.get(p.id) == 2 %}active{% endif %}" onclick="setCallStatus({{ p.id }}, '{{ selected_day_date }}', 2, this)">
+                                    <i class="fas fa-times"></i> لم يتم الرد
+                                </button>
+                            </div>
                         </div>
                     </div>
                     
@@ -647,15 +653,19 @@
                                         </span>
                                         {% endif %}
                                     </div>
-                                    <div class="mb-2 d-flex align-items-center gap-2">
+                                    <div class="mb-2 d-flex align-items-center gap-2 flex-wrap">
                                         <a href="tel:{{ p.phone }}" class="phone-link" style="font-size: 0.95rem;">
                                             <i class="fas fa-phone text-success" style="font-size: 0.8rem; margin-left: 2px;"></i>
                                             {{ p.phone }}
                                         </a>
-                                        <button type="button" class="call-btn {% if called_patients.get(p.id) %}called{% endif %}" onclick="markCalled({{ p.id }}, '{{ selected_day_date }}', this)" style="font-size: 0.78rem; padding: 4px 10px;">
-                                            <i class="fas {% if called_patients.get(p.id) %}fa-check-circle{% else %}fa-phone{% endif %}"></i>
-                                            <span class="call-label">{% if called_patients.get(p.id) %}تم{% else %}اتصلت؟{% endif %}</span>
-                                        </button>
+                                        <div class="call-group" data-patient="{{ p.id }}">
+                                            <button type="button" class="call-btn call-answered {% if called_patients.get(p.id) == 1 %}active{% endif %}" onclick="setCallStatus({{ p.id }}, '{{ selected_day_date }}', 1, this)">
+                                                <i class="fas fa-check"></i> تم الرد
+                                            </button>
+                                            <button type="button" class="call-btn call-not-answered {% if called_patients.get(p.id) == 2 %}active{% endif %}" onclick="setCallStatus({{ p.id }}, '{{ selected_day_date }}', 2, this)">
+                                                <i class="fas fa-times"></i> لم يتم الرد
+                                            </button>
+                                        </div>
                                     </div>
                                     {% if p.session_days %}
                                     <div class="mt-2 d-flex align-items-center gap-2 flex-wrap">
@@ -736,29 +746,20 @@
         });
     }
 
-    function markCalled(patientId, callDate, btn) {
+    function setCallStatus(patientId, callDate, status, btn) {
         fetch('/toggle_call/' + patientId, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/x-www-form-urlencoded',
             },
-            body: 'call_date=' + encodeURIComponent(callDate)
+            body: 'call_date=' + encodeURIComponent(callDate) + '&status=' + status
         })
         .then(r => r.json())
         .then(data => {
             if (data.ok) {
-                const isCalled = btn.classList.contains('called');
-                const icon = btn.querySelector('i');
-                const label = btn.querySelector('.call-label');
-                if (isCalled) {
-                    btn.classList.remove('called');
-                    icon.className = 'fas fa-phone';
-                    if (label) label.textContent = 'اتصلت؟';
-                } else {
-                    btn.classList.add('called');
-                    icon.className = 'fas fa-check-circle';
-                    if (label) label.textContent = 'تم';
-                }
+                var group = btn.closest('.call-group');
+                group.querySelectorAll('.call-btn').forEach(function(b) { b.classList.remove('active'); });
+                btn.classList.add('active');
             }
         });
     }

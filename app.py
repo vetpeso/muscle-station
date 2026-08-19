@@ -1559,20 +1559,20 @@ def mark_absence(patient_id):
 def toggle_call(patient_id):
     db = get_db()
     call_date = request.form.get('call_date', datetime.date.today().strftime('%Y-%m-%d'))
+    status = int(request.form.get('status', 1))
     existing = db.execute(
         "SELECT id, called FROM appointment_calls WHERE patient_id=? AND call_date=?",
         (patient_id, call_date)
     ).fetchone()
     if existing:
-        new_val = 0 if existing['called'] else 1
         db.execute(
             "UPDATE appointment_calls SET called=?, called_by=?, called_at=? WHERE id=?",
-            (new_val, session.get('user_id'), datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S') if new_val else None, existing['id'])
+            (status, session.get('user_id'), datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S') if status else None, existing['id'])
         )
     else:
         db.execute(
-            "INSERT INTO appointment_calls (patient_id, call_date, called, called_by, called_at) VALUES (?,?,1,?,?)",
-            (patient_id, call_date, session.get('user_id'), datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
+            "INSERT INTO appointment_calls (patient_id, call_date, called, called_by, called_at) VALUES (?,?,?,?,?)",
+            (patient_id, call_date, status, session.get('user_id'), datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S') if status else None)
         )
     db.commit()
     return jsonify({'ok': True})
