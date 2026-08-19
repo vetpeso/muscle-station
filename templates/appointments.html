@@ -278,6 +278,49 @@
         color: #ef4444;
     }
 
+    .call-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 14px;
+        border-radius: 10px;
+        font-weight: 700;
+        font-size: 0.85rem;
+        border: 1px solid rgba(34,197,94,0.3);
+        background: rgba(34,197,94,0.08);
+        color: #22c55e;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        text-decoration: none;
+    }
+    .call-btn:hover {
+        background: rgba(34,197,94,0.18);
+        border-color: #22c55e;
+        color: #22c55e;
+        text-decoration: none;
+    }
+    .call-btn.called {
+        background: rgba(34,197,94,0.2);
+        border-color: #22c55e;
+        color: #22c55e;
+        box-shadow: 0 0 10px rgba(34,197,94,0.15);
+    }
+    .call-btn.called i {
+        animation: none;
+    }
+    .call-check {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        font-size: 0.8rem;
+        font-weight: 800;
+        color: #22c55e;
+        padding: 4px 10px;
+        background: rgba(34,197,94,0.12);
+        border-radius: 8px;
+        border: 1px solid rgba(34,197,94,0.25);
+    }
+
     .collapse-header-btn {
         background: var(--card-bg);
         border: 1px solid var(--border-color);
@@ -503,11 +546,15 @@
                             </span>
                             {% endif %}
                         </div>
-                        <div class="mb-2">
-                            <span class="patient-phone">
-                                <i class="fas fa-phone text-success" style="font-size: 0.8rem; margin-left: 2px;"></i> 
-                                <a href="tel:{{ p.phone }}" class="phone-link">{{ p.phone }}</a>
-                            </span>
+                        <div class="mb-2 d-flex align-items-center gap-2">
+                            <a href="tel:{{ p.phone }}" class="phone-link" style="font-size: 0.95rem;">
+                                <i class="fas fa-phone text-success" style="font-size: 0.8rem; margin-left: 2px;"></i>
+                                {{ p.phone }}
+                            </a>
+                            <button type="button" class="call-btn {% if called_patients.get(p.id) %}called{% endif %}" onclick="markCalled({{ p.id }}, '{{ selected_day_date }}', this)" style="font-size: 0.78rem; padding: 4px 10px;">
+                                <i class="fas {% if called_patients.get(p.id) %}fa-check-circle{% else %}fa-phone{% endif %}"></i>
+                                <span class="call-label">{% if called_patients.get(p.id) %}تم{% else %}اتصلت؟{% endif %}</span>
+                            </button>
                         </div>
                     </div>
                     
@@ -534,7 +581,7 @@
                             </div>
                         </div>
 
-                        <div class="d-flex gap-2">
+                        <div class="d-flex gap-2 flex-wrap">
                             <a href="/patient/{{ p.id }}?action=add_followup" class="btn-attend flex-fill justify-content-center">
                                 <i class="fas fa-check-circle"></i> حضور الجلسة
                             </a>
@@ -600,11 +647,15 @@
                                         </span>
                                         {% endif %}
                                     </div>
-                                    <div class="mb-2">
-                                        <span class="patient-phone">
-                                            <i class="fas fa-phone text-success" style="font-size: 0.8rem; margin-left: 2px;"></i> 
-                                            <a href="tel:{{ p.phone }}" class="phone-link">{{ p.phone }}</a>
-                                        </span>
+                                    <div class="mb-2 d-flex align-items-center gap-2">
+                                        <a href="tel:{{ p.phone }}" class="phone-link" style="font-size: 0.95rem;">
+                                            <i class="fas fa-phone text-success" style="font-size: 0.8rem; margin-left: 2px;"></i>
+                                            {{ p.phone }}
+                                        </a>
+                                        <button type="button" class="call-btn {% if called_patients.get(p.id) %}called{% endif %}" onclick="markCalled({{ p.id }}, '{{ selected_day_date }}', this)" style="font-size: 0.78rem; padding: 4px 10px;">
+                                            <i class="fas {% if called_patients.get(p.id) %}fa-check-circle{% else %}fa-phone{% endif %}"></i>
+                                            <span class="call-label">{% if called_patients.get(p.id) %}تم{% else %}اتصلت؟{% endif %}</span>
+                                        </button>
                                     </div>
                                     {% if p.session_days %}
                                     <div class="mt-2 d-flex align-items-center gap-2 flex-wrap">
@@ -682,6 +733,36 @@
         });
         collapseEl.addEventListener('hide.bs.collapse', () => {
             icon.style.transform = 'rotate(0deg)';
+        });
+    }
+
+    function markCalled(patientId, callDate, btn) {
+        fetch('/toggle_call/' + patientId, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: 'call_date=' + encodeURIComponent(callDate)
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.ok) {
+                const isCalled = btn.classList.contains('called');
+                const icon = btn.querySelector('i');
+                const label = btn.querySelector('.call-label');
+                if (isCalled) {
+                    btn.classList.remove('called');
+                    icon.className = 'fas fa-phone';
+                    if (label) label.textContent = 'اتصلت؟';
+                } else {
+                    btn.classList.add('called');
+                    icon.className = 'fas fa-check-circle';
+                    if (label) label.textContent = 'تم';
+                }
+            }
+        });
+    }
+            }
         });
     }
 </script>

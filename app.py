@@ -1,5 +1,5 @@
 # ─── MUSCLE STATION 2026 - RAILWAY DEPLOYMENT TRIGGER ───
-from flask import Flask, render_template, request, redirect, url_for, g, session, flash, make_response, send_from_directory
+from flask import Flask, render_template, request, redirect, url_for, g, session, flash, make_response, send_from_directory, jsonify
 import sqlite3
 import datetime
 from functools import wraps
@@ -505,6 +505,18 @@ def init_db():
                 )
             """)
 
+            db_execute(db, """
+                CREATE TABLE IF NOT EXISTS appointment_calls (
+                    id SERIAL PRIMARY KEY,
+                    patient_id INTEGER NOT NULL,
+                    call_date TEXT NOT NULL,
+                    called INTEGER DEFAULT 0,
+                    called_by INTEGER,
+                    called_at TEXT,
+                    UNIQUE(patient_id, call_date)
+                )
+            """)
+
             # إعدادات افتراضية
             r = db_fetchone(db, "SELECT COUNT(*) AS cnt FROM settings")
             if r and r['cnt'] == 0:
@@ -832,6 +844,18 @@ def init_db():
                     record_id INTEGER,
                     details TEXT,
                     created_at TEXT DEFAULT CURRENT_TIMESTAMP
+                )
+            """)
+
+            c.execute("""
+                CREATE TABLE IF NOT EXISTS appointment_calls (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    patient_id INTEGER NOT NULL,
+                    call_date TEXT NOT NULL,
+                    called INTEGER DEFAULT 0,
+                    called_by INTEGER,
+                    called_at TEXT,
+                    UNIQUE(patient_id, call_date)
                 )
             """)
 
@@ -1483,6 +1507,14 @@ def appointments():
     scheduled_patients = [p for p in scheduled_patients if p['id'] not in patients_with_visit_today]
     other_active_patients = [p for p in other_active_patients if p['id'] not in patients_with_visit_today]
     
+    # جلب حالة الاتصال لكل مريض في اليوم المحدد
+    called_patients = {}
+    for row in db.execute(
+        "SELECT patient_id, called FROM appointment_calls WHERE call_date=?",
+        (selected_day_date,)
+    ).fetchall():
+        called_patients[row['patient_id']] = row['called']
+
     return render_template(
         'appointments.html',
         scheduled_patients=scheduled_patients,
@@ -1491,6 +1523,7 @@ def appointments():
         selected_day_date=selected_day_date,
         weekdays_list=weekdays_list,
         today_weekday_name=today_weekday_name,
+        called_patients=called_patients,
     )
 
 
@@ -1517,6 +1550,32 @@ def mark_absence(patient_id):
         pname = db.execute("SELECT name FROM patients WHERE id=?", (patient_id,)).fetchone()
         flash(f'تم تسجيل غياب {pname["name"] if pname else ""}', 'info')
     return redirect(url_for('appointments', day=request.form.get('day', '')))
+
+
+# ── تسجيل الاتصال بالмерیض ──
+
+@app.route('/toggle_call/<int:patient_id>', methods=['POST'])
+@login_required
+def toggle_call(patient_id):
+    db = get_db()
+    call_date = request.form.get('call_date', datetime.date.today().strftime('%Y-%m-%d'))
+    existing = db.execute(
+        "SELECT id, called FROM appointment_calls WHERE patient_id=? AND call_date=?",
+        (patient_id, call_date)
+    ).fetchone()
+    if existing:
+        new_val = 0 if existing['called'] else 1
+        db.execute(
+            "UPDATE appointment_calls SET called=?, called_by=?, called_at=? WHERE id=?",
+            (new_val, session.get('user_id'), datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S') if new_val else None, existing['id'])
+        )
+    else:
+        db.execute(
+            "INSERT INTO appointment_calls (patient_id, call_date, called, called_by, called_at) VALUES (?,?,1,?,?)",
+            (patient_id, call_date, session.get('user_id'), datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
+        )
+    db.commit()
+    return jsonify({'ok': True})
 
 
 # ── التقارير ──
