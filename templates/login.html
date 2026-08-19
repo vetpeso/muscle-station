@@ -2,13 +2,13 @@
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=0.25, maximum-scale=5.0, user-scalable=yes">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>تسجيل الدخول - نظام العيادة الاحترافي</title>
 <link href="/static/css/bootstrap.min.css" rel="stylesheet">
 <link href="/static/css/all.min.css" rel="stylesheet">
 <link href="/static/css/cairo-font.css" rel="stylesheet">
 <style>
-* { font-family: 'Cairo', sans-serif; box-sizing: border-box; }
+* { font-family: 'Cairo', sans-serif; }
 
 body {
     background: linear-gradient(135deg, #0b1120 0%, #1e3a5f 50%, #0b1120 100%);
@@ -17,10 +17,7 @@ body {
     align-items: center;
     justify-content: center;
     position: relative;
-    overflow-x: auto;
-    margin: 0;
-    padding: 0;
-    width: 100%;
+    overflow: hidden;
 }
 
 body::before {
@@ -49,7 +46,6 @@ body::after {
     width: 100%;
     max-width: 420px;
     padding: 20px;
-    box-sizing: border-box;
 }
 
 .login-card {
@@ -61,17 +57,6 @@ body::after {
     box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
     width: 100%;
     box-sizing: border-box;
-}
-
-@media (max-width: 575px) {
-    .login-container {
-        padding: 10px;
-        max-width: 100vw;
-    }
-    .login-card {
-        padding: 25px 18px !important;
-        border-radius: 18px !important;
-    }
 }
 
 /* ─── High-Fidelity Muscle Station Brand Logo (Login Version) ─── */
@@ -274,16 +259,11 @@ body::after {
     .text-muscle, .text-station { font-size: 1.9rem; }
 }
 @media (max-width: 480px) {
-    .login-container { padding: 10px; }
-    .login-card { padding: 20px 16px; border-radius: 16px; }
-    .logo-main-box { width: 200px; height: 48px; }
-    .text-muscle, .text-station { font-size: 1.3rem; }
-    .login-title { font-size: 1.1rem; }
-    .login-subtitle { font-size: 0.8rem; margin-bottom: 20px; }
-    .input-group-text { padding: 10px 12px; }
-    .form-control { padding: 10px 12px; font-size: 14px; }
-    .btn-login { padding: 12px; font-size: 0.95rem; }
-    .system-info p { font-size: 0.7rem; }
+    .login-container { padding: 12px; }
+    .login-card { padding: 30px 20px; border-radius: 18px; }
+    .logo-main-box { width: 230px; height: 54px; }
+    .text-muscle, .text-station { font-size: 1.5rem; }
+    .login-title { font-size: 1.3rem; }
 }
 </style>
 </head>
