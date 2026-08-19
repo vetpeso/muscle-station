@@ -754,17 +754,18 @@
             },
             body: 'call_date=' + encodeURIComponent(callDate) + '&status=' + status
         })
-        .then(r => r.json())
-        .then(data => {
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
             if (data.ok) {
                 var group = btn.closest('.call-group');
-                group.querySelectorAll('.call-btn').forEach(function(b) { b.classList.remove('active'); });
+                if (group) {
+                    var btns = group.querySelectorAll('.call-btn');
+                    for (var i = 0; i < btns.length; i++) { btns[i].classList.remove('active'); }
+                }
                 btn.classList.add('active');
             }
-        });
-    }
-            }
-        });
+        })
+        .catch(function(e) { console.error('Call status error:', e); });
     }
 </script>
 
